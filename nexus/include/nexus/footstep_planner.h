@@ -3,7 +3,7 @@
 class footstep_planner{
   public:
   footstep_planner();
-  void curvature_cal();
+  void curvature_cal(int start_node, int end_node);
   void ref_path_x_cb(const std_msgs::Float32MultiArray::ConstPtr &array);
   void ref_path_y_cb(const std_msgs::Float32MultiArray::ConstPtr &array);
   void init_yaw_cb(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &i_pose);
@@ -11,6 +11,7 @@ class footstep_planner{
   void footstep_planner_cmd(const planner_msgs::Mapbuilder::ConstPtr &cmd);
   void creat_footstep();
   void create_footpose();
+  double root_path_slope_cal(int start_node, int end_node);
   void foot_draw(float x,float y, tf::Quaternion q_input ,int num,bool isleft);
 
   int find_one_step_max_node(int start_node,float max_length);
@@ -30,6 +31,7 @@ class footstep_planner{
 
   std::vector<double> path_x;
   std::vector<double> path_y;
+  std::vector<double> node_curvatures;
 
   visualization_msgs::MarkerArray foot_markers;
 };

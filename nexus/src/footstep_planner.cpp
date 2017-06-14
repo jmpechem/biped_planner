@@ -72,6 +72,7 @@ void footstep_planner::foot_draw(float x,float y, tf::Quaternion q_input,int num
   marker.scale.x = 0.28;
   marker.scale.y = 0.1;
   marker.scale.z = 0.03;
+
   if(isleft)
   {
       marker.color.r = 0.0f;
@@ -109,12 +110,13 @@ int footstep_planner::find_one_step_max_node(int start_node,float max_length)
        max_node = i;
        return max_node;
    }
-   else
+   else if( i == (path_x.size()-1))
    {
-       return 0;
+        return i;
    }
   }
 
+  return start_node+5;
 }
 
 void footstep_planner::creat_footstep()
@@ -125,7 +127,9 @@ void footstep_planner::creat_footstep()
   {
   float d = 0.1; // root to foot center distance
   float step_max_length = 0.1; // one step foot maximum length
-
+  float d_delta = 0.01; // dist scale
+  float alpha_delta = 2.0; // deg scale
+  float alpha_limit = deg2rad(10.0); // deg scale
   tf::Matrix3x3 mi(qi);
   double ri, pi, yi;
   mi.getRPY(ri, pi, yi);
@@ -137,10 +141,54 @@ void footstep_planner::creat_footstep()
   foot_draw(path_x.at(0)-xi_shift,path_y.at(0)-yi_shift,qi,1,false);
 
 
-  int cur_max_index;
-  cur_max_index = find_one_step_max_node(0,step_max_length);
+  int start_node_index = 0;
+  int cur_max_index = 0;
+  // loop based foot pose generation need
+  int final_index = 0;
+  for(size_t i=0; i<30;i++)
+  {
+    cur_max_index = find_one_step_max_node(start_node_index,step_max_length);
+    curvature_cal(start_node_index,cur_max_index);
+    cout << "st:" << path_x.at(start_node_index) << ", " <<path_y.at(start_node_index) << endl;
+    cout << "end:" << path_x.at(cur_max_index) << ", " <<path_y.at(cur_max_index) << endl;
+    double yaw_cal = root_path_slope_cal(start_node_index,cur_max_index);
+    yaw_cal = yaw_cal + 1.57079632679;
+    if(rad2deg(yaw_cal) >= 180 && rad2deg(yaw_cal) <= 270)
+    {
+        yaw_cal = yaw_cal - 3.14159265359;
+    }
+    cout << "yaw" << rad2deg(yaw_cal) << endl;
+    /*if( alpha_limit <= yaw_cal)
+    {
+        tf::Quaternion qc = tf::createQuaternionFromYaw(yaw_cal); // atan2 problem?
+        tf::Matrix3x3 mc(qc);
+        double rc,pc,yc;
+        mc.getRPY(rc,pc,yc);
+        double xc_shift = -sin(yc)*d;
+        double yc_shift = cos(yc)*d;
+        if( (i%2) == 0 )
+        {foot_draw(path_x.at(start_node_index)-xc_shift,path_y.at(start_node_index)-yc_shift,qc,i+2,false);}
+        else if( (i%2) == 1)
+        {foot_draw(path_x.at(start_node_index)+xc_shift,path_y.at(start_node_index)+yc_shift,qc,i+2,true);}
+        final_index++;
+    }
+    else
+    {*/
+        tf::Quaternion qc = tf::createQuaternionFromYaw(yaw_cal); // atan2 problem?
+        tf::Matrix3x3 mc(qc);
+        double rc,pc,yc;
+        mc.getRPY(rc,pc,yc);
+        double xc_shift = -sin(yc)*d;
+        double yc_shift = cos(yc)*d;
+        if( (i%2) == 0 )
+        {foot_draw(path_x.at(cur_max_index)-xc_shift,path_y.at(cur_max_index)-yc_shift,qc,i+2,false);}
+        else if( (i%2) == 1)
+        {foot_draw(path_x.at(cur_max_index)+xc_shift,path_y.at(cur_max_index)+yc_shift,qc,i+2,true);}
 
-
+        start_node_index = cur_max_index;
+        final_index++;
+    //}
+  }
 
   tf::Matrix3x3 mg(qg);
   double rg, pg, yg;
@@ -150,19 +198,59 @@ void footstep_planner::creat_footstep()
   double xg_shift = -sin(yg)*d;
   double yg_shift = cos(yg)*d;
 
-  foot_draw(path_x.at(x_end)+xg_shift,path_y.at(y_end)+yg_shift,qg,2,true);
-  foot_draw(path_x.at(x_end)-xg_shift,path_y.at(y_end)-yg_shift,qg,3,false);
+  foot_draw(path_x.at(x_end)+xg_shift,path_y.at(y_end)+yg_shift,qg,final_index+2,true);
+  foot_draw(path_x.at(x_end)-xg_shift,path_y.at(y_end)-yg_shift,qg,final_index+3,false);
 
 
   foot_box_pub.publish(foot_markers);
 
   }
 }
-
-void footstep_planner::curvature_cal()
+double footstep_planner::root_path_slope_cal(int start_node, int end_node)
 {
-  /*
-  std::vector< cv::Point2f > vecCurvature( vecContourPoints.size() );
+  double delta_x = path_x.at(end_node) - path_x.at(start_node);
+  double delta_y = path_y.at(end_node) - path_y.at(start_node);
+  double dAngle = -atan2(delta_x , delta_y);
+  //dAngle *= (180.0/M_PI);
+  //if( dAngle < 0.0 ) dAngle += 360.0;
+  return dAngle;
+}
+
+void footstep_planner::curvature_cal(int start_node, int end_node)
+{
+  int CurvaturePointSize = end_node - start_node + 1;
+  std::vector<double> vecCurvature(CurvaturePointSize);
+  Eigen::Vector2d posOld, posOlder;
+  Eigen::Vector2d f1stDerivative;
+  Eigen::Vector2d f2ndDerivative;
+
+  Eigen::Vector2d pos;
+  for(size_t i=0; i<CurvaturePointSize;i++)
+  {
+
+    pos[0] = path_x.at(i);
+    pos[1] = path_y.at(i);
+    if(i==0) {posOld = posOlder = pos;}
+    f1stDerivative[0] =   pos[0]      - posOld[0];
+    f1stDerivative[1] =   pos[1]      - posOld[1];
+    f2ndDerivative[0] = - pos[0] + 2.0f * posOld[0] - posOlder[0];
+    f2ndDerivative[1] = - pos[1] + 2.0f * posOld[1] - posOlder[1];
+
+    float curvature2D = 0.0f;
+    if(std::abs(f2ndDerivative[0]) > 10e-4 && std::abs(f2ndDerivative[1]) > 10e-4)
+    {
+      curvature2D = sqrt( std::abs(pow( f2ndDerivative[1]*f1stDerivative[0] - f2ndDerivative[0]*f1stDerivative[1], 2.0f ) / pow( f2ndDerivative[0] + f2ndDerivative[1], 3.0 ) ) );
+    }
+    vecCurvature.push_back(curvature2D);
+    posOlder = posOld;
+    posOld = pos;
+  }
+  node_curvatures.clear();
+  for(size_t i=0; i<vecCurvature.size();i++)
+  {
+      node_curvatures.push_back(vecCurvature.at(i));
+  }
+  /*std::vector< cv::Point2f > vecCurvature( vecContourPoints.size() );
 
   cv::Point2f posOld, posOlder;
   cv::Point2f f1stDerivative; f2ndDerivative;
