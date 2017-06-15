@@ -23,6 +23,9 @@ class root_path_finder{
   ros::Publisher  plan_pose_pub;
   ros::Publisher  spline_plan_x_pub;
   ros::Publisher  spline_plan_y_pub;
+  ros::Publisher  plan_line_pub;
+  ros::Publisher  spline_plan_line_pub;
+
 
   bool goal_setted;
   bool init_setted;
@@ -42,4 +45,6 @@ class root_path_finder{
   geometry_msgs::PoseWithCovarianceStamped init_pose_stamped;
   geometry_msgs::PoseStamped goal_pose_stamped;
   geometry_msgs::PoseStamped spline_pose;
+
+
 };

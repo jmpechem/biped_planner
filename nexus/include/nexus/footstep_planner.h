@@ -1,5 +1,6 @@
 #include "def_include.h"
 
+
 class footstep_planner{
   public:
   footstep_planner();
@@ -9,7 +10,7 @@ class footstep_planner{
   void init_yaw_cb(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &i_pose);
   void goal_yaw_cb(const geometry_msgs::PoseStamped::ConstPtr &g_pose);
   void footstep_planner_cmd(const planner_msgs::Mapbuilder::ConstPtr &cmd);
-  void creat_footstep();
+  void creat_footstep(float foot_distance, float onestep);
   void create_footpose();
   double root_path_slope_cal(int start_node, int end_node);
   void foot_draw(float x,float y, tf::Quaternion q_input ,int num,bool isleft);
@@ -34,4 +35,7 @@ class footstep_planner{
   std::vector<double> node_curvatures;
 
   visualization_msgs::MarkerArray foot_markers;
+
+  int cnt_of_foot;
+
 };

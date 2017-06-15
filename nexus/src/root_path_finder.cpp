@@ -17,6 +17,9 @@ root_path_finder::root_path_finder()
   spline_plan_x_pub = r_nh.advertise<std_msgs::Float32MultiArray>("spline_path_x",10,this);
   spline_plan_y_pub = r_nh.advertise<std_msgs::Float32MultiArray>("spline_path_y",10,this);;
 
+  plan_line_pub = r_nh.advertise<visualization_msgs::Marker>("plan_line",10);
+  spline_plan_line_pub = r_nh.advertise<visualization_msgs::Marker>("spline_plan_line",10);
+
   pub_root = r_nh.advertise<nav_msgs::Path>("path_root",1,true);
   pub_splined_root = r_nh.advertise<nav_msgs::Path>("splined_path_root",1,true);
 }
@@ -146,7 +149,28 @@ void root_path_finder::root_path_plan()
           path_plan_line_draw.header.stamp = ros::Time::now();
           pub_root.publish(path_plan_line_draw);
 
+          geometry_msgs::Point p_tmp;
+          visualization_msgs::Marker plan_line;
+          plan_line.header.frame_id = "base_link";
+          plan_line.header.stamp = ros::Time::now();
+          plan_line.ns = "path_line";
+          plan_line.action = visualization_msgs::Marker::ADD;
+          plan_line.pose.orientation.w = 1.0f;
+          plan_line.id = 0;
+          plan_line.type = visualization_msgs::Marker::LINE_STRIP;
+          plan_line.scale.x = 0.03;
+          plan_line.color.b = 1.0;
+          plan_line.color.a = 1.0;
+          for(uint32_t i=0; i<plan_result.size();i++)
+          {
+              plan_root_pose = plan_result.at(i);
+              p_tmp.x = plan_root_pose.pose.position.x;
+              p_tmp.y = plan_root_pose.pose.position.y;
+              p_tmp.z = 0.1;
+              plan_line.points.push_back(p_tmp);
 
+          }
+          plan_line_pub.publish(plan_line);
 
       }
       delete dstar;
@@ -197,6 +221,7 @@ void root_path_finder::spline_root_path(int deg, int node_num, float resolution)
   y_path.data.clear();
 
   spline.setCtrlp(ctrlp);
+
   std::vector<float> spline_result;
   float spline_resolution = 0.0f;
   spline_pose.header.frame_id="base_link";
@@ -204,6 +229,7 @@ void root_path_finder::spline_root_path(int deg, int node_num, float resolution)
     for(int i=0;i<resolution;i++)
     {
       spline_result = spline.evaluate(spline_resolution).result();
+
       spline_resolution = i*spline_res;
       spline_pose.pose.position.z = 0.0;
       spline_pose.pose.orientation.w = 1.0;
@@ -232,6 +258,28 @@ void root_path_finder::spline_root_path(int deg, int node_num, float resolution)
 
     spline_plan_x_pub.publish(x_path);
     spline_plan_y_pub.publish(y_path);
+
+    geometry_msgs::Point p_tmp;
+    visualization_msgs::Marker spline_plan_line;
+    spline_plan_line.header.frame_id = "base_link";
+    spline_plan_line.header.stamp = ros::Time::now();
+    spline_plan_line.ns = "path_line";
+    spline_plan_line.action = visualization_msgs::Marker::ADD;
+    spline_plan_line.pose.orientation.w = 1.0f;
+    spline_plan_line.id = 0;
+    spline_plan_line.type = visualization_msgs::Marker::LINE_STRIP;
+    spline_plan_line.scale.x = 0.03;
+    spline_plan_line.color.b = 1.0;
+    spline_plan_line.color.a = 1.0;
+    for(uint32_t i=0; i<x_path.data.size();i++)
+    {
+        p_tmp.x = x_path.data.at(i);
+        p_tmp.y = y_path.data.at(i);
+        p_tmp.z = 0.1;
+        spline_plan_line.points.push_back(p_tmp);
+
+    }
+    spline_plan_line_pub.publish(spline_plan_line);
 }
 
 void root_path_finder::root_path_finder_cmd(const planner_msgs::Mapbuilder::ConstPtr &cmd)
