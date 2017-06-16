@@ -17,6 +17,8 @@ map_builder::map_builder()
   raw_cloud_pub = m_nh.advertise<sensor_msgs::PointCloud2>("raw_point_cloud",100);
   hcut_cloud_pub = m_nh.advertise<sensor_msgs::PointCloud2>("height_cut_point_cloud",100);
   grid_map_pub = m_nh.advertise<grid_map_msgs::GridMap>("grid_map", 1, true);
+
+  grid_map_plane_seg_pub = m_nh.advertise<sensor_msgs::PointCloud2>("/plane_seg",100);
 }
 
 void map_builder::processed_cloud_cb(const sensor_msgs::PointCloud2::ConstPtr &input)
@@ -156,6 +158,33 @@ void map_builder::grid_map_converting(float grid_resolution)
         grid_map_pub.publish(message);
         ROS_INFO_THROTTLE(1.0, "Grid map (timestamp %f) published.", message.info.header.stamp.toSec());
         scopedLockmap.unlock();
+
+        pcl::PointCloud<pcl::PointXYZ> seg_cloud;
+        seg_cloud.clear();
+
+
+
+        for(GridMapIterator iter(grid_map_);!iter.isPastEnd();++iter)
+        {
+                Position pos;
+                grid_map_.getPosition(*iter,pos);
+                Index idx;
+                grid_map_.getIndex(pos,idx);
+                Position3 pos3;
+                grid_map_.getPosition3("elevation",idx,pos3);
+                pcl::PointXYZ   pt;
+                pt.x = pos3(0);
+                pt.y = pos3(1);
+                pt.z = pos3(2);
+                if(pt.x != 0) // I don't know why x=0 position grid generated....
+                seg_cloud.push_back(pt);
+        }
+        pcl::PCLPointCloud2 cloud_p;
+        pcl::toPCLPointCloud2(seg_cloud, cloud_p);
+        sensor_msgs::PointCloud2 output;
+        pcl_conversions::fromPCL(cloud_p, output);
+        output.header.frame_id = "base_link";
+        grid_map_plane_seg_pub.publish(output);
   }
   else
   {

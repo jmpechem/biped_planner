@@ -52,6 +52,7 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
     QObject::connect(ui.button_spline_root, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
     QObject::connect(ui.button_footstep, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
 
+
     ui.edit_spline_deg->setText("3");
     ui.edit_spline_nodenum->setText("5");
     ui.edit_spline_noderes->setText("1000");
@@ -66,6 +67,11 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
     ui.edit_obstacle_radius->setText("0.1");
 
     ui.edit_seg_num->setText("3");
+
+    ui.edit_footdist->setText("0.2");
+    ui.edit_onestep->setText("0.1");
+
+    ui.edit_seg_dist_threshold->setText("0.03");
     /*********************
     ** Auto Start
     **********************/
@@ -226,6 +232,8 @@ void MainWindow::stateButtonClicked(){
        state = "step_detect";
        QString tmp = ui.edit_seg_num->text();
        id = tmp.toInt();
+       tmp = ui.edit_seg_dist_threshold->text();
+       val[0] = tmp.toFloat();
      }
    else if(objName.compare("button_plan_root")==0){
        state = "plan_root";
@@ -241,8 +249,11 @@ void MainWindow::stateButtonClicked(){
      }
    else if(objName.compare("button_footstep")==0){
        state = "footstep_plan";
-     }
-
+       QString tmp = ui.edit_footdist->text();
+       val[0] = tmp.toFloat();
+       tmp = ui.edit_onestep->text();
+       val[1] = tmp.toFloat();
+     }   
 
    qnode.send_transition(state,id,val[0],val[1],val[2]);
 

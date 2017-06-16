@@ -48,7 +48,7 @@ void seg_cloud_cb(const sensor_msgs::PointCloud2::ConstPtr& msg)
 
 */
 }
-void plane_segmentation(int number_of_plane)
+void plane_segmentation(int number_of_plane,float dist_threshold)
 {
   pcl::PointCloud<pcl::PointXYZ> cloud;
   pcl::PointXYZ temp;
@@ -69,7 +69,7 @@ void plane_segmentation(int number_of_plane)
     // Mandatory
     seg.setModelType (pcl::SACMODEL_PLANE);
     seg.setMethodType (pcl::SAC_RANSAC);
-    seg.setDistanceThreshold (0.02);
+    seg.setDistanceThreshold (dist_threshold);
 
     pcl::PointCloud<pcl::PointXYZI> TotalCloud;
     sensor_msgs::PointCloud2 output;
@@ -131,7 +131,7 @@ void map_builder_cb(const planner_msgs::Mapbuilder::ConstPtr &cmd)
   if(cmd->state == "step_detect")
   {
    ROS_INFO("%s",cmd->state.c_str());
-   plane_segmentation(cmd->id);
+   plane_segmentation(cmd->id,cmd->val1);
 
   }
   else if(cmd->state == "save_stl")

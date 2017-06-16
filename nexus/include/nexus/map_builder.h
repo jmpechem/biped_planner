@@ -21,6 +21,7 @@ class map_builder{
   ros::Publisher raw_cloud_pub;
   ros::Publisher hcut_cloud_pub;
   ros::Publisher grid_map_pub;
+  ros::Publisher grid_map_plane_seg_pub;
 
   boost::recursive_mutex    MapMutex_;
 };

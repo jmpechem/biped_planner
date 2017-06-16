@@ -63,17 +63,17 @@ grid_map_visualizations:
     params:
      layer: sub_elevation
 
-  - name: edge_line_detector
+  - name: segment_result
     type: occupancy_grid
     params:
-     layer: edge_line
+     layer: segment
      data_min: -10.0
      data_max: 10.0
 
-  - name: sub_step_height
+  - name: sub_map_elevation
     type: occupancy_grid
     params:
-     layer: sub_rel_height
+     layer: sub_elevation
      data_min: -10.0
      data_max: 10.0
 
