@@ -1,6 +1,19 @@
 #include "nexus/footstep_planner.h"
+#include <fstream>
 
 GridMap footstep_grid_map_data;
+
+typedef struct foot_list{
+  float x;
+  float y;
+  float z;
+  float roll;
+  float pitch;
+  float yaw;
+  int   foot_kind;
+}*pfoot_list;
+
+vector<foot_list> plan_foot_lists;
 
 footstep_planner::footstep_planner()
 { 
@@ -15,6 +28,11 @@ footstep_planner::footstep_planner()
  path_y.clear();
  foot_markers.markers.clear();
  cnt_of_foot = 0;
+ plan_foot_lists.clear();
+ qi.setX(0.0f);
+ qi.setY(0.0f);
+ qi.setZ(0.0f);
+ qi.setW(1.0f);
 }
 void footstep_planner::init_yaw_cb(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &i_pose)
 {
@@ -53,8 +71,9 @@ void footstep_planner::ref_path_y_cb(const std_msgs::Float32MultiArray::ConstPtr
   return;
 }
 
-void footstep_planner::foot_draw(float x,float y, tf::Quaternion q_input,int num,bool isleft)
+void footstep_planner::foot_draw(double x,double y, tf::Quaternion q_input,int num,bool isleft)
 {
+
   uint32_t shape = visualization_msgs::Marker::CUBE;
   visualization_msgs::Marker marker;
   marker.header.frame_id = "base_link";
@@ -70,7 +89,7 @@ void footstep_planner::foot_draw(float x,float y, tf::Quaternion q_input,int num
   marker.pose.orientation.y = q_input.getY();
   marker.pose.orientation.z = q_input.getZ();
   marker.pose.orientation.w = q_input.getW();
-  marker.scale.x = 0.28;
+  marker.scale.x = 0.3;
   marker.scale.y = 0.1;
   marker.scale.z = 0.03;
 
@@ -91,13 +110,33 @@ void footstep_planner::foot_draw(float x,float y, tf::Quaternion q_input,int num
   marker.lifetime = ros::Duration();  
   foot_markers.markers.push_back(marker);  
 
+  tf::Matrix3x3 m(q_input);
+  double roll, pitch, yaw;
+  m.getRPY(roll, pitch, yaw);
+
+  cout << "foot" << x << ", "<< y << ", "<< yaw << ", "<< isleft << endl;
+
+
+  foot_list foot;
+  foot.x = x;
+  foot.y = y;
+  foot.z = 0.0f;
+  foot.roll = 0.0f;
+  foot.pitch = 0.0f;
+  foot.yaw = yaw;
+  if(isleft)
+  {foot.foot_kind = 0;}
+  else
+  {foot.foot_kind = 1;}
+
+  plan_foot_lists.push_back(foot);
 }
 void footstep_planner::create_footpose()
 {
   float d= 0.1;
 
 }
-int footstep_planner::find_one_step_max_node(int start_node,float max_length)
+int footstep_planner::find_one_step_max_node(int start_node,double max_length)
 {
   int max_node;
   double dist = 0.0f;
@@ -118,15 +157,17 @@ int footstep_planner::find_one_step_max_node(int start_node,float max_length)
   return start_node+5;
 }
 
-void footstep_planner::creat_footstep(float foot_distance, float onestep)
+void footstep_planner::creat_footstep(double foot_distance, double onestep)
 {
+  plan_foot_lists.clear();
+
   foot_markers.markers.clear();
   cnt_of_foot = 0;
   if(path_x.size() == 0 || path_y.size() == 0){ }
   else
   {
-  float d = foot_distance/2.0; // root to foot center distance
-  float step_max_length = onestep; // one step foot maximum length
+  double d = foot_distance/2.0; // root to foot center distance
+  double step_max_length = onestep; // one step foot maximum length
   float d_delta = 0.01; // dist scale
   float alpha_delta = deg2rad(10.0); // deg scale
   float alpha_limit = deg2rad(20.0); // deg scale
@@ -137,10 +178,17 @@ void footstep_planner::creat_footstep(float foot_distance, float onestep)
   double xi_shift = -sin(yi)*d;
   double yi_shift = cos(yi)*d;
 
-  foot_draw(path_x.at(0)+xi_shift,path_y.at(0)+yi_shift,qi,cnt_of_foot,true);
+  foot_draw(0,-d,qi,cnt_of_foot,false);
   cnt_of_foot++;
+  foot_draw(0,d,qi,cnt_of_foot,true);
+  cnt_of_foot++;
+
   foot_draw(path_x.at(0)-xi_shift,path_y.at(0)-yi_shift,qi,cnt_of_foot,false);
   cnt_of_foot++;
+  foot_draw(path_x.at(0)+xi_shift,path_y.at(0)+yi_shift,qi,cnt_of_foot,true);
+  cnt_of_foot++;
+
+
 
   /*
   for(size_t i=0;i<40;i++)
@@ -189,8 +237,8 @@ void footstep_planner::creat_footstep(float foot_distance, float onestep)
   {
     cur_max_index = find_one_step_max_node(start_node_index,step_max_length);
     curvature_cal(start_node_index,cur_max_index);
-    cout << "st:" << path_x.at(start_node_index) << ", " <<path_y.at(start_node_index) << endl;
-    cout << "end:" << path_x.at(cur_max_index) << ", " <<path_y.at(cur_max_index) << endl;
+    //cout << "st:" << path_x.at(start_node_index) << ", " <<path_y.at(start_node_index) << endl;
+    //cout << "end:" << path_x.at(cur_max_index) << ", " <<path_y.at(cur_max_index) << endl;
     //cout << "curv:"<< node_curvatures.at(start_node_index) << ", " <<  node_curvatures.at(cur_max_index) << endl;
 
     double yaw_cal = root_path_slope_cal(start_node_index,cur_max_index);
@@ -329,11 +377,20 @@ void footstep_planner::creat_footstep(float foot_distance, float onestep)
   int y_end = path_y.size()-1;
   double xg_shift = -sin(yg)*d;
   double yg_shift = cos(yg)*d;
-
-  foot_draw(path_x.at(x_end)+xg_shift,path_y.at(y_end)+yg_shift,qg,cnt_of_foot,true);
-  cnt_of_foot++;
-  foot_draw(path_x.at(x_end)-xg_shift,path_y.at(y_end)-yg_shift,qg,cnt_of_foot,false);
-  cnt_of_foot++;
+  if( (cnt_of_foot%2) == 1)
+  {
+      foot_draw(path_x.at(x_end)+xg_shift,path_y.at(y_end)+yg_shift,qg,cnt_of_foot,true);
+      cnt_of_foot++;
+      foot_draw(path_x.at(x_end)-xg_shift,path_y.at(y_end)-yg_shift,qg,cnt_of_foot,false);
+      cnt_of_foot++;
+  }
+  else if( (cnt_of_foot%2) == 0)
+  {
+      foot_draw(path_x.at(x_end)-xg_shift,path_y.at(y_end)-yg_shift,qg,cnt_of_foot,false);
+      cnt_of_foot++;
+      foot_draw(path_x.at(x_end)+xg_shift,path_y.at(y_end)+yg_shift,qg,cnt_of_foot,true);
+      cnt_of_foot++;
+  }
 
 
   foot_box_pub.publish(foot_markers);
@@ -385,17 +442,37 @@ void footstep_planner::curvature_cal(int start_node, int end_node)
       node_curvatures.push_back(vecCurvature.at(i));
   }  
 }
+
+void footstep_planner::save_offline_footstep()
+{
+  ofstream fout;
+
+  fout.open("/home/jimin/catkin_ws/src/nexus/data/footstepInfo.txt");
+
+  for(size_t i=0; i<plan_foot_lists.size();i++)
+  {
+      foot_list foot = plan_foot_lists.at(i);
+      fout<<foot.x<<"\t"<<foot.y<<"\t"<<foot.z<<"\t"<<foot.roll<<"\t"<<foot.pitch<<"\t"<<foot.yaw<<"\t"<<foot.foot_kind<<endl;
+  }
+
+  if(fout.is_open()==true) // 파일 닫기
+  {
+     fout.close();
+  }
+}
+
 void footstep_planner::footstep_planner_cmd(const planner_msgs::Mapbuilder::ConstPtr &cmd)
 {
   if(cmd->state == "footstep_plan")
   {
     ROS_INFO("%s",cmd->state.c_str());
-    creat_footstep(cmd->val1,cmd->val2);
+    creat_footstep((double)cmd->val1,(double)cmd->val2);
 
   }
-  else if(cmd->state == "t1")
+  else if(cmd->state == "save_footstep")
   {
     ROS_INFO("%s",cmd->state.c_str());
+    save_offline_footstep();
 
   }
   else if(cmd->state == "t2")

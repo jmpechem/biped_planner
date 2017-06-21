@@ -60,11 +60,13 @@ public:
 
 	void send_transition(std::string str,unsigned int id_,float value1, float value2, float value3);
 	void pose_callback(const planner_msgs::Mapbuilder::ConstPtr &msg);
+	void segment_callback(const planner_msgs::Mapbuilder::ConstPtr &msg);
 
 Q_SIGNALS:
 	void loggingUpdated();
     void rosShutdown();
     void poseInfoUpdated();
+    void segmentationInfoUpdated();
 
 private:
 	int init_argc;
@@ -74,8 +76,10 @@ private:
         bool isConnected;
         ros::Publisher state_publisher;
         ros::Subscriber pose_sub;
+        ros::Subscriber segment_sub;
 public:
         planner_msgs::Mapbuilder pose_recv_msg;
+        planner_msgs::Mapbuilder segment_recv_msg;
 };
 
 }  // namespace plan_commander

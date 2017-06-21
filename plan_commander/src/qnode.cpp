@@ -53,6 +53,7 @@ bool QNode::init() {
 	start();
 	state_publisher = n.advertise<planner_msgs::Mapbuilder>("/map_builder_cmd",5);
 	pose_sub = n.subscribe<planner_msgs::Mapbuilder>("/plan_pose_recv",100,&QNode::pose_callback, this);
+	segment_sub = n.subscribe<planner_msgs::Mapbuilder>("/segment_info_recv",100,&QNode::segment_callback, this);
 	isConnected = true;
 	return true;
 }
@@ -72,6 +73,7 @@ bool QNode::init(const std::string &master_url, const std::string &host_url) {
 	start();
 	state_publisher = n.advertise<planner_msgs::Mapbuilder>("/map_builder_cmd",5);
 	pose_sub = n.subscribe<planner_msgs::Mapbuilder>("/plan_pose_recv",100,&QNode::pose_callback, this);
+	segment_sub = n.subscribe<planner_msgs::Mapbuilder>("/segment_info_recv",100,&QNode::segment_callback, this);
 	isConnected = true;
 	return true;
 }
@@ -95,6 +97,11 @@ void QNode::pose_callback(const planner_msgs::Mapbuilder::ConstPtr &msg)
      pose_recv_msg = *msg;
      poseInfoUpdated();
 
+}
+void QNode::segment_callback(const planner_msgs::Mapbuilder::ConstPtr &msg)
+{
+  segment_recv_msg = *msg;
+  segmentationInfoUpdated();
 }
 
 void QNode::run() {

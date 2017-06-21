@@ -10,12 +10,12 @@ class footstep_planner{
   void init_yaw_cb(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &i_pose);
   void goal_yaw_cb(const geometry_msgs::PoseStamped::ConstPtr &g_pose);
   void footstep_planner_cmd(const planner_msgs::Mapbuilder::ConstPtr &cmd);
-  void creat_footstep(float foot_distance, float onestep);
+  void creat_footstep(double foot_distance, double onestep);
   void create_footpose();
   double root_path_slope_cal(int start_node, int end_node);
-  void foot_draw(float x,float y, tf::Quaternion q_input ,int num,bool isleft);
-
-  int find_one_step_max_node(int start_node,float max_length);
+  void foot_draw(double x,double y, tf::Quaternion q_input ,int num,bool isleft);
+  void save_offline_footstep();
+  int find_one_step_max_node(int start_node,double max_length);
 
   private:
   ros::NodeHandle f_nh;

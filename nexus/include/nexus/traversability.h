@@ -4,6 +4,7 @@ class traversability{
   public:
   traversability();
   void traversability_cmd(const planner_msgs::Mapbuilder::ConstPtr &cmd);
+  void plane_num_cb(const planner_msgs::Mapbuilder::ConstPtr& num);
   void grid_map_cb(const grid_map_msgs::GridMap& map_input);
   void segmented_grid_map_cb(const sensor_msgs::PointCloud2::ConstPtr &clouds);
   void normal_extraction(float radius);
@@ -17,6 +18,7 @@ class traversability{
   ros::Subscriber grid_map_sub;
   ros::Subscriber traversability_cmd_sub;
   ros::Subscriber segmented_grid_data_sub;
+  ros::Subscriber segment_sub;
   ros::Publisher grid_map_data_pub;
   //ros::Publisher grid_map_plane_seg_pub;
 
@@ -25,5 +27,9 @@ class traversability{
   float big_radius;
   float reference_height;
 
+  int total_segmented_number;
+
+  vector<int> obstacle_planes;
+  vector<int> not_obs_planes;
   boost::recursive_mutex    TraversabilityMutex_;
 };

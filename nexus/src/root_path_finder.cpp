@@ -33,7 +33,7 @@ void root_path_finder::init_pose_cb(const geometry_msgs::PoseWithCovarianceStamp
   msg.val2 = init_pose_stamped.pose.pose.position.y;
   msg.val3 = init_pose_stamped.pose.pose.orientation.z;
   plan_pose_pub.publish(msg);
-  init_setted = true;
+  //init_setted = true;
 }
 void root_path_finder::goal_pose_cb(const geometry_msgs::PoseStamped::ConstPtr &g_pose)
 {
@@ -86,7 +86,8 @@ bool root_path_finder::convert_pose2grid()
 
 void root_path_finder::root_path_plan()
 {
-  if(init_setted == true && goal_setted == true)
+  //if(init_setted == true && goal_setted == true)
+  if(goal_setted == true)
   {
       Dstar *dstar = new Dstar();
       dstar->init(0,0,1,1);
@@ -99,11 +100,14 @@ void root_path_finder::root_path_plan()
           root_grid_map_data.getIndex(pos,idx);
           if(root_grid_map_data.isValid(*iter,"sub_elevation"))
           {
-              dstar->updateCell(idx(0),idx(1),1);
+              if(root_grid_map_data.at("obstacle_with_pf",*iter) > 0)
+              { dstar->updateCell(idx(0),idx(1),-1);}
+              else
+              {dstar->updateCell(idx(0),idx(1),1);}
           }
           else
           {
-              dstar->updateCell(idx(0),idx(1),-1);
+              dstar->updateCell(idx(0),idx(1),2);
           }
       }
       if(convert_pose2grid() == true)
@@ -289,6 +293,19 @@ void root_path_finder::root_path_finder_cmd(const planner_msgs::Mapbuilder::Cons
     ROS_INFO("%s",cmd->state.c_str());
     root_path_plan();
 
+  }
+  else if(cmd->state == "zero_init")
+  {
+  init_pose_stamped.pose.pose.position.x = 0.0f;
+  init_pose_stamped.pose.pose.position.y = 0.0f;
+  init_pose_stamped.pose.pose.orientation.z = 0.0f;
+  planner_msgs::Mapbuilder msg;
+  msg.id = 0;
+  msg.state = "init_pose";
+  msg.val1 = init_pose_stamped.pose.pose.position.x;
+  msg.val2 = init_pose_stamped.pose.pose.position.y;
+  msg.val3 = init_pose_stamped.pose.pose.orientation.z;
+  plan_pose_pub.publish(msg);
   }
   else if(cmd->state == "spline_root")
   {

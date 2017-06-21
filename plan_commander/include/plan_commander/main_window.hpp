@@ -59,12 +59,19 @@ public Q_SLOTS:
     *******************************************/
         void stateButtonClicked();
         void updateposeinfo();
+        void updatesegmentationinfo();
+        void add_fetch(QModelIndex index);
+        void remove_fetch(QModelIndex index);
 private:
 	Ui::MainWindowDesign ui;
 	QNode qnode;
 	bool isConnected;
-
-
+	QStringListModel *add_model;
+	QStringListModel *remove_model;
+	QString buffer_seg;
+	int buffer_seg_num;
+	QStringList add_List;
+	QStringList remove_List;
 };
 
 }  // namespace plan_commander

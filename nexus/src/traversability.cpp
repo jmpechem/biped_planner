@@ -13,7 +13,11 @@ traversability::traversability()
   grid_map_sub = t_nh.subscribe("grid_map",100,&traversability::grid_map_cb,this);
   grid_map_data_pub = t_nh.advertise<grid_map_msgs::GridMap>("grid_map", 1, true);
   segmented_grid_data_sub = t_nh.subscribe<sensor_msgs::PointCloud2>("/plane_seg_result",100,&traversability::segmented_grid_map_cb,this);
+  segment_sub = t_nh.subscribe<planner_msgs::Mapbuilder>("/segment_info_recv",100,&traversability::plane_num_cb, this);
   seg_clouds->clear();
+  total_segmented_number = 0;
+  obstacle_planes.clear();
+  not_obs_planes.clear();
   //grid_map_plane_seg_pub = t_nh.advertise<sensor_msgs::PointCloud2>("/plane_seg",100);
 }
 void traversability::segmented_grid_map_cb(const sensor_msgs::PointCloud2::ConstPtr &clouds)
@@ -22,7 +26,7 @@ void traversability::segmented_grid_map_cb(const sensor_msgs::PointCloud2::Const
   for(GridMapIterator iter(grid_map_data);!iter.isPastEnd();++iter)
   {
       if(grid_map_data.isValid(*iter,"elevation"))
-      grid_map_data.at("segment",*iter) = -1;
+      grid_map_data.at("segment",*iter) = 0; // -1
   }
 
   pcl::fromROSMsg(*clouds,*seg_clouds);
@@ -32,7 +36,7 @@ void traversability::segmented_grid_map_cb(const sensor_msgs::PointCloud2::Const
       Index index;
       Position position(point.x,point.y);
       if(!grid_map_data.getIndex(position, index)) continue;
-      if(grid_map_data.isValid(index,"elevation")){grid_map_data.at("segment",index) = seg_clouds->points[i].intensity-1;}
+      if(grid_map_data.isValid(index,"elevation")){grid_map_data.at("segment",index) = seg_clouds->points[i].intensity;}
   }
   //boost::recursive_mutex::scoped_lock scopedLockmap(TraversabilityMutex_);
   ros::Time time = ros::Time::now();
@@ -158,7 +162,60 @@ void traversability::traversability_cmd(const planner_msgs::Mapbuilder::ConstPtr
   else if(cmd->state == "step_detect")
   {
     ROS_INFO("%s",cmd->state.c_str());
+  }
+  else if(cmd->state == "obstacle")
+  {
+      bool isthere = false;
+      for(size_t i=0;i<obstacle_planes.size();i++)
+        {
+          if(obstacle_planes.at(i) == cmd->id)
+            {
+              isthere = true;
+            }
+        }
+      if(!isthere){obstacle_planes.push_back(cmd->id);}
 
+      for(size_t i=0; i<not_obs_planes.size();i++)
+      {
+          if(not_obs_planes.at(i) == cmd->id)
+          {
+              not_obs_planes.erase(not_obs_planes.begin() + i);
+          }
+      }
+  }
+  else if(cmd->state == "traversable")
+  {
+      bool isthere = false;
+      for(size_t i=0; i<not_obs_planes.size();i++)
+      {
+              if(not_obs_planes.at(i) == cmd->id)
+              {
+                  isthere = true;
+              }
+      }
+      if(!isthere){not_obs_planes.push_back(cmd->id);}
+
+      for(size_t i=0; i<obstacle_planes.size();i++)
+      {
+          if(obstacle_planes.at(i) == cmd->id)
+          {
+              obstacle_planes.erase(obstacle_planes.begin() + i);
+          }
+      }
+
+  }
+}
+void traversability::plane_num_cb(const planner_msgs::Mapbuilder::ConstPtr& num)
+{
+  if(num->state == "seg_plane")
+  {
+     total_segmented_number = num->id;
+     for(size_t i=0; i<=total_segmented_number;i++)
+     {
+         //obstacle_planes.clear();
+         not_obs_planes.push_back(i);
+         cout << "seg" << not_obs_planes.at(i) << endl;
+     }
   }
 }
 
@@ -166,7 +223,25 @@ void traversability::obstacle_finder(float slope, float rel_height)
 {  
 
     if(grid_map_data.exists("elevation") && grid_map_data.exists("normal_z"))
-      {
+    {
+        for(GridMapIterator iter(grid_map_data);!iter.isPastEnd();++iter)
+        {
+
+            grid_map_data.at("obstacle",*iter) = 0;
+        }
+
+        for(size_t i=0; i<obstacle_planes.size();i++)
+        {
+            for(GridMapIterator iter(grid_map_data);!iter.isPastEnd();++iter)
+            {
+                if(grid_map_data.at("segment",*iter) == obstacle_planes.at(i))
+                {
+                    grid_map_data.at("obstacle",*iter) = 1;
+                }
+            }
+        }
+
+    /*
     float angle = 0.0f;
     double cell_z = 0.0f;
     float ref_height = -1.09;
@@ -189,27 +264,11 @@ void traversability::obstacle_finder(float slope, float rel_height)
            if(seg_num > seg_max_num && seg_num != -1){ seg_max_num = seg_num; }
            if(seg_num < seg_min_num && seg_num != -1 ){ seg_min_num = seg_num; }
         }
-
-/*
-
-        if(angle >= deg2rad(slope))// || height >= rel_height)//if(rel_slope >= deg2rad(slope) || height >= rel_height)
-        {
-            grid_map_data.at("obstacle",*iter) = 1;
-        }
-        else
-        {
-            grid_map_data.at("obstacle",*iter) = 0;
-        }
-*/
     }
 
 
     int seg_cnt = seg_max_num - seg_min_num + 1;
-
-
     int out_sloped = 0;
-
-
     float seg_height_sum[seg_cnt];
     float seg_height_mean[seg_cnt];
     for(size_t i =0; i<seg_cnt;i++)
@@ -217,10 +276,11 @@ void traversability::obstacle_finder(float slope, float rel_height)
         seg_height_sum[i] = 0.0f;
         seg_height_mean[i] = 0.0f;
     }
-
     int seg_index=0;
     int seg_plane_cnt = 0;
     float each_seg[seg_cnt];
+    vector<float> seg_height_mean_vec;
+    seg_height_mean_vec.clear();
     for(size_t i=0; i< seg_cnt ; i++)
     {
         seg_plane_cnt = 0;
@@ -242,8 +302,9 @@ void traversability::obstacle_finder(float slope, float rel_height)
           }
 
         }
-
-        seg_height_mean[seg_index] = seg_height_sum[seg_index-1] / ((float)seg_plane_cnt);
+        seg_height_mean[seg_index] = seg_height_sum[seg_index] / ((float)seg_plane_cnt);
+        cout << "seg " << seg_index << "th mean h : "<< seg_height_mean[seg_index] << endl;
+        if(seg_index != 0 ) {seg_height_mean_vec.push_back(seg_height_mean[seg_index]);}
         each_seg[seg_index] = ((float)out_sloped)/((float)seg_plane_cnt);
         seg_index++;
     }
@@ -252,57 +313,67 @@ void traversability::obstacle_finder(float slope, float rel_height)
     int min_height_index = 0;
     float max_h = 0.0f;
     float min_h = 0.0f;
-    for(size_t i=0; i< seg_cnt; i++)
+    for(size_t i=0; i< seg_height_mean_vec.size(); i++)
     {
           if(i==0)
           {
-            max_h = seg_height_mean[i];
-            min_h = seg_height_mean[i];
+            max_h = seg_height_mean_vec.at(i);
+            min_h = seg_height_mean_vec.at(i);
           }
-          if(seg_height_mean[i] > max_h){ max_height_index = i;}
-          if(seg_height_mean[i] < min_h){ min_height_index = i;}
+          if(seg_height_mean_vec.at(i) > max_h){ max_h = seg_height_mean_vec.at(i); max_height_index = i;}
+          if(seg_height_mean_vec.at(i) < min_h){ min_h = seg_height_mean_vec.at(i); min_height_index = i;}
     }
 
     // not segmented area is obstacle area
     for(GridMapIterator iter(grid_map_data);!iter.isPastEnd();++iter)
     {
-        if(grid_map_data.at("segment",*iter) == -1 )
+        if(grid_map_data.at("segment",*iter) == -1 || grid_map_data.at("segment",*iter) == 0)
         grid_map_data.at("obstacle",*iter) = 1;
     }
 
+    vector<int> obstacle_plane_idx;
+    obstacle_plane_idx.clear();
     // over slope segmented plane is obstacle area
     for(size_t i = 0; i< seg_cnt; i++)
     {
       if(each_seg[i] >= 0.95)
       {
-          for(GridMapIterator iter(grid_map_data);!iter.isPastEnd();++iter)
-          {
-              if(grid_map_data.at("segment",*iter) == i)
-              {
-                 grid_map_data.at("obstacle",*iter) = 1;
-              }
-          }
+
+          obstacle_plane_idx.push_back(i);
       }
     }
 
-    /*for(size_t i =0; i< seg_cnt; i++)
-    {
-      if( seg_height_mean[max_height_index]-rel_height > seg_height_mean[i] || seg_height_mean[min_height_index]+rel_height < seg_height_mean[i])
-      {
-          for(GridMapIterator iter(grid_map_data);!iter.isPastEnd();++iter)
-          {
-              if(grid_map_data.at("segment",*iter) == i)
-              {
-                 grid_map_data.at("obstacle",*iter) = 1;
-              }
-          }
-      }
-    }*/
+    cout << "max min plane idx : " << max_height_index << ", " << min_height_index << endl;
+    cout << "h max min : " << seg_height_mean_vec.at(max_height_index) << ", " << seg_height_mean_vec.at(min_height_index) << endl;
 
-    /*if(grid_map_data.at("slope",*iter) > slope)
+    float h_max_p = seg_height_mean_vec.at(max_height_index)+rel_height;
+    float h_max_m = seg_height_mean_vec.at(max_height_index)-rel_height;
+    float h_min_p = seg_height_mean_vec.at(min_height_index)+rel_height;
+    float h_min_m = seg_height_mean_vec.at(min_height_index)-rel_height;
+    for(size_t i =0; i< seg_height_mean_vec.size(); i++)
     {
-     grid_map_data.at("obstacle",*iter) = 1;
-    }*/
+      cout << "h val : " << seg_height_mean_vec.at(i) << endl;
+      float h_tmp = seg_height_mean_vec.at(i);
+      if( h_max_p < h_tmp && h_max_m > h_tmp && h_min_p < h_tmp && h_min_m > h_tmp)
+      {
+          obstacle_plane_idx.push_back(i);
+      }
+    }
+
+
+    for(size_t i=0;i<obstacle_plane_idx.size();i++)
+    {
+        for(GridMapIterator iter(grid_map_data);!iter.isPastEnd();++iter)
+        {
+               if(grid_map_data.at("segment",*iter) == obstacle_plane_idx.at(i))
+               {
+                  grid_map_data.at("obstacle",*iter) = 1;
+               }
+        }
+        cout << "obstacle idx : " << obstacle_plane_idx.at(i) << endl;
+    }
+    */
+
 
     ROS_INFO("obstacle founded!");
     ros::Time time = ros::Time::now();

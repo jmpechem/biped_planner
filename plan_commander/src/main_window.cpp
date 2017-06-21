@@ -38,6 +38,7 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
 	setWindowIcon(QIcon(":/images/icon.png"));
     QObject::connect(&qnode, SIGNAL(rosShutdown()), this, SLOT(close()));
     QObject::connect(&qnode, SIGNAL(poseInfoUpdated()),this, SLOT(updateposeinfo()));
+    QObject::connect(&qnode, SIGNAL(segmentationInfoUpdated()),this, SLOT(updatesegmentationinfo()));
 
 
     QObject::connect(ui.button_pcd,  SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
@@ -51,11 +52,20 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
     QObject::connect(ui.button_plan_root, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
     QObject::connect(ui.button_spline_root, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
     QObject::connect(ui.button_footstep, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
+    QObject::connect(ui.button_zeroinit, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
+    QObject::connect(ui.button_save_footstep, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
 
+    QObject::connect(ui.button_add, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
+    QObject::connect(ui.button_remove, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
+
+    QObject::connect(ui.target_list_view, SIGNAL(clicked(QModelIndex)), this, SLOT(add_fetch(QModelIndex)));
+    QObject::connect(ui.obstacle_list_view, SIGNAL(clicked(QModelIndex)), this, SLOT(remove_fetch(QModelIndex)));
 
     ui.edit_spline_deg->setText("3");
     ui.edit_spline_nodenum->setText("5");
     ui.edit_spline_noderes->setText("1000");
+
+
 
 
     ui.edit_heightlimit->setText("1");
@@ -68,10 +78,13 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
 
     ui.edit_seg_num->setText("3");
 
-    ui.edit_footdist->setText("0.2");
-    ui.edit_onestep->setText("0.1");
+    ui.edit_footdist->setText("0.255588");
+    ui.edit_onestep->setText("0.2");
 
     ui.edit_seg_dist_threshold->setText("0.03");
+
+    add_model = new QStringListModel(this);
+    remove_model = new QStringListModel(this);
     /*********************
     ** Auto Start
     **********************/
@@ -235,6 +248,9 @@ void MainWindow::stateButtonClicked(){
        tmp = ui.edit_seg_dist_threshold->text();
        val[0] = tmp.toFloat();
      }
+   else if(objName.compare("button_zeroinit")==0){
+       state = "zero_init";
+     }
    else if(objName.compare("button_plan_root")==0){
        state = "plan_root";
      }
@@ -253,7 +269,54 @@ void MainWindow::stateButtonClicked(){
        val[0] = tmp.toFloat();
        tmp = ui.edit_onestep->text();
        val[1] = tmp.toFloat();
-     }   
+     }
+   else if(objName.compare("button_save_footstep")==0){
+       state = "save_footstep";
+   }
+   else if(objName.compare("button_remove")==0){ // select obstacle
+
+      for(int i=0;i<add_List.size();i++)
+      {
+         if(add_List.at(i) == buffer_seg)
+         {
+               add_List.removeAt(i);
+         }
+      }
+      remove_List << buffer_seg;
+      add_List.sort();
+      remove_List.sort();
+      add_model->setStringList(add_List);
+      remove_model->setStringList(remove_List);
+      ui.target_list_view->setModel(add_model);
+      ui.obstacle_list_view->setModel(remove_model);
+      state = "obstacle";
+      if(buffer_seg == "remained")
+      { id = 0;}
+      else
+      {id = buffer_seg.split(" ")[1].toInt();}
+   }
+   else if(objName.compare("button_add")==0){ // not obstacle
+       for(int i=0;i<remove_List.size();i++)
+       {
+          if(remove_List.at(i) == buffer_seg)
+          {
+            remove_List.removeAt(i);
+          }
+       }
+       add_List << buffer_seg;
+       add_List.sort();
+       remove_List.sort();
+       add_model->setStringList(add_List);
+       remove_model->setStringList(remove_List);
+       ui.target_list_view->setModel(add_model);
+       ui.obstacle_list_view->setModel(remove_model);
+       state = "traversable";
+       if(buffer_seg == "remained")
+       { id = 0;}
+       else
+       {id = buffer_seg.split(" ")[1].toInt();}
+   }
+
 
    qnode.send_transition(state,id,val[0],val[1],val[2]);
 
@@ -274,9 +337,48 @@ void MainWindow::updateposeinfo()
   }
 
 }
+void MainWindow::updatesegmentationinfo()
+{
+
+  if(qnode.segment_recv_msg.state == "seg_plane")
+  {
+    int seg_plane_num  = qnode.segment_recv_msg.id;
+
+    QString tmp;
+    add_List << "remained";
+    for(size_t i=0;i<seg_plane_num;i++)
+    {
+        tmp = "seg " + QString::number(i+1);
+        add_List << tmp;
+    }
+    add_model->setStringList(add_List);
+    remove_model->setStringList(remove_List);
+    ui.target_list_view->setModel(add_model);
+    ui.obstacle_list_view->setModel(remove_model);
+    ui.target_list_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui.obstacle_list_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  }  
+
+
+}
+
+void MainWindow::add_fetch(QModelIndex index) {
+  QStringListModel* listModel= qobject_cast<QStringListModel*>(ui.target_list_view->model());
+  QString value = listModel->stringList().at(index.row());
+  buffer_seg = value;
+  //buffer_seg_num = index.row();//value.split(" ")[1].toInt();
+}
+void MainWindow::remove_fetch(QModelIndex index) {
+  QStringListModel* listModel= qobject_cast<QStringListModel*>(ui.obstacle_list_view->model());
+  QString value = listModel->stringList().at(index.row());
+  buffer_seg = value;
+  //buffer_seg_num = index.row();//value.split(" ")[1].toInt();
+}
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+	delete add_model;
+	delete remove_model;
 	WriteSettings();
 	QMainWindow::closeEvent(event);
 }

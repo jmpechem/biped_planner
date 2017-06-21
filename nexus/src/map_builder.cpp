@@ -53,6 +53,8 @@ void map_builder::map_builder_cmd(const planner_msgs::Mapbuilder::ConstPtr &cmd)
 
 void map_builder::load_from_pcd()
 {
+
+  //if (pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/jimin/catkin_ws/src/jm_global/out_pcd_data_set/out_indo_ds.pcd", *clouds) == -1) //* load the file
   if (pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/jimin/catkin_ws/src/jm_global/pcd_data_set/pt4.pcd", *clouds) == -1) //* load the file
   {
     PCL_ERROR ("Couldn't read pcd file\n");

@@ -27,26 +27,17 @@
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/extract_indices.h>
-
+#include "planner_msgs/Mapbuilder.h"
 
 using namespace std;
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr plane_clouds (new pcl::PointCloud<pcl::PointXYZ>);
 ros::Publisher segmented_cloud_pub;
-
+ros::Publisher segment_plane_pub;
 
 void seg_cloud_cb(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
-  pcl::fromROSMsg(*msg,*plane_clouds);
-  /*sensor_msgs::PointCloud2::Ptr output_cloud(new sensor_msgs::PointCloud2);
-  pcl::toROSMsg (*plane_clouds, *output_cloud);
-  output_cloud->header.frame_id = "base_link";
-  segmented_cloud_pub.publish(output_cloud);*/
-
-/*
-
-
-*/
+  pcl::fromROSMsg(*msg,*plane_clouds);  
 }
 void plane_segmentation(int number_of_plane,float dist_threshold)
 {
@@ -73,6 +64,7 @@ void plane_segmentation(int number_of_plane,float dist_threshold)
 
     pcl::PointCloud<pcl::PointXYZI> TotalCloud;
     sensor_msgs::PointCloud2 output;
+    int seg_plane_num = 0;
     for(int i = 0; i < number_of_plane; i++)
     {
         if(cloud.size() < 100)
@@ -109,7 +101,7 @@ void plane_segmentation(int number_of_plane,float dist_threshold)
 
            TotalCloud.push_back(pt2);
         }
-
+        seg_plane_num++;
         ROS_INFO("%d. remained point cloud = %d", i, (int)cloud.size());
     }
 
@@ -122,7 +114,10 @@ void plane_segmentation(int number_of_plane,float dist_threshold)
 
     ROS_INFO("published it.");
 
-
+    planner_msgs::Mapbuilder plane_info;
+    plane_info.state = "seg_plane";
+    plane_info.id = seg_plane_num;
+    segment_plane_pub.publish(plane_info);
 }
 
 void map_builder_cb(const planner_msgs::Mapbuilder::ConstPtr &cmd)
@@ -151,6 +146,7 @@ int main(int argc, char** argv)
   ros::Subscriber map_builder_cmd_sub = nh.subscribe<planner_msgs::Mapbuilder>("map_builder_cmd",100,map_builder_cb);
   ros::Subscriber hcut_point_cloud_sub = nh.subscribe<sensor_msgs::PointCloud2>("plane_seg",1,seg_cloud_cb);
   segmented_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("plane_seg_result",1);
+  segment_plane_pub = nh.advertise<planner_msgs::Mapbuilder>("segment_info_recv",1);
   ros::Rate rate(10.0);
 
 
