@@ -211,10 +211,8 @@ void traversability::plane_num_cb(const planner_msgs::Mapbuilder::ConstPtr& num)
   {
      total_segmented_number = num->id;
      for(size_t i=0; i<=total_segmented_number;i++)
-     {
-         //obstacle_planes.clear();
-         not_obs_planes.push_back(i);
-         cout << "seg" << not_obs_planes.at(i) << endl;
+     {         
+         not_obs_planes.push_back(i);        
      }
   }
 }
@@ -381,6 +379,8 @@ void traversability::obstacle_finder(float slope, float rel_height)
     grid_map_msgs::GridMap message;
     GridMapRosConverter::toMessage(grid_map_data, message);
     grid_map_data_pub.publish(message);
+    obstacle_planes.clear();
+    not_obs_planes.clear();
     }
     else
     {

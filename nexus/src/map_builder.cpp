@@ -12,12 +12,12 @@ map_builder::map_builder()
   processed_clouds->clear();
   grid_points->clear();
   map_builder_cmd_sub = m_nh.subscribe<planner_msgs::Mapbuilder>("map_builder_cmd",100,&map_builder::map_builder_cmd,this);
-  online_cloud_sub = m_nh.subscribe<sensor_msgs::PointCloud2>("point_cloud",100,&map_builder::load_from_online,this);
+  online_cloud_sub = m_nh.subscribe<sensor_msgs::PointCloud2>("sync_scan_cloud_filtered",100,&map_builder::load_from_online,this);
   processed_cloud_sub = m_nh.subscribe<sensor_msgs::PointCloud2>("noise_preprocessed_point_cloud",100,&map_builder::processed_cloud_cb,this);
   raw_cloud_pub = m_nh.advertise<sensor_msgs::PointCloud2>("raw_point_cloud",100);
   hcut_cloud_pub = m_nh.advertise<sensor_msgs::PointCloud2>("height_cut_point_cloud",100);
   grid_map_pub = m_nh.advertise<grid_map_msgs::GridMap>("grid_map", 1, true);
-
+  isOnline_recv = false;
   grid_map_plane_seg_pub = m_nh.advertise<sensor_msgs::PointCloud2>("/plane_seg",100);
 }
 
@@ -37,6 +37,11 @@ void map_builder::map_builder_cmd(const planner_msgs::Mapbuilder::ConstPtr &cmd)
     load_from_pcd();
 
   }
+  else if(cmd->state == "load_onlinedata")
+  {
+    ROS_INFO("%s",cmd->state.c_str());
+    isOnline_recv = true;
+  }
   else if(cmd->state == "height_cut")
   {
       ROS_INFO("%s",cmd->state.c_str());
@@ -55,7 +60,7 @@ void map_builder::load_from_pcd()
 {
 
   //if (pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/jimin/catkin_ws/src/jm_global/out_pcd_data_set/out_indo_ds.pcd", *clouds) == -1) //* load the file
-  if (pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/jimin/catkin_ws/src/jm_global/pcd_data_set/pt4.pcd", *clouds) == -1) //* load the file
+  if (pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/jimin/catkin_ws/src/jm_global/pcd_data_set/book_4-5-6_ds3.pcd", *clouds) == -1) //* load the file
   {
     PCL_ERROR ("Couldn't read pcd file\n");
     return ;
@@ -72,7 +77,12 @@ void map_builder::load_from_pcd()
 
 void map_builder::load_from_online(const sensor_msgs::PointCloud2::ConstPtr &input)
 {
-
+    if(isOnline_recv)
+    {
+        clouds->clear();
+        pcl::fromROSMsg(*input,*clouds);
+        isOnline_recv = false;
+    }
 }
 
 void map_builder::height_cut(float robot_height)

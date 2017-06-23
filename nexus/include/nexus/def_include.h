@@ -60,6 +60,8 @@
 #include <std_msgs/Float32MultiArray.h>
 
 #include "planner_msgs/Mapbuilder.h"
+#include "planner_msgs/foot_info.h"
+#include "planner_msgs/foot_info_array.h"
 
 #define PI 3.14159265359
 #define deg2rad(deg)  ((deg) * PI / 180.0)

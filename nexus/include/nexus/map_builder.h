@@ -24,4 +24,5 @@ class map_builder{
   ros::Publisher grid_map_plane_seg_pub;
 
   boost::recursive_mutex    MapMutex_;
+  bool    isOnline_recv;
 };

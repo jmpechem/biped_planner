@@ -16,10 +16,13 @@ class footstep_planner{
   void foot_draw(double x,double y, tf::Quaternion q_input ,int num,bool isleft);
   void save_offline_footstep();
   int find_one_step_max_node(int start_node,double max_length);
+  void init_foot_pose();
+  void final_foot_pose();
 
   private:
   ros::NodeHandle f_nh;
   ros::Publisher  foot_box_pub;
+  ros::Publisher  foot_step_plan_pub;
 
 
   ros::Subscriber ref_path_x_sub;
@@ -27,6 +30,8 @@ class footstep_planner{
   ros::Subscriber init_yaw_sub;
   ros::Subscriber goal_yaw_sub;
   ros::Subscriber footstep_cmd_sub;
+  float init_xy[2];
+  float goal_xy[2];
   tf::Quaternion qi;
   tf::Quaternion qg;
 
@@ -37,5 +42,6 @@ class footstep_planner{
   visualization_msgs::MarkerArray foot_markers;
 
   int cnt_of_foot;
+  planner_msgs::foot_info_array foot_step_lists;
 
 };

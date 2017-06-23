@@ -141,7 +141,7 @@ void root_path_finder::root_path_plan()
               root_grid_map_data.getPosition(idx,pos);              
               plan_root_pose.pose.position.x = pos(0);
               plan_root_pose.pose.position.y = pos(1);
-              plan_result.push_back(plan_root_pose);
+              plan_result.push_back(plan_root_pose);                           
               spline_control_point++;
             }
           path_plan_line_draw.poses.clear();
@@ -196,7 +196,13 @@ void root_path_finder::spline_root_path(int deg, int node_num, float resolution)
 
   int divide_control_point = spline_control_point/node_num;
 
+  if(divide_control_point <= spline_deg)
+  {
+      divide_control_point = spline_deg+1;
+  }
+
   ts::BSpline spline(spline_deg,spline_dimension,divide_control_point,TS_CLAMPED);
+
   std::vector<float> ctrlp = spline.ctrlp();
   spline_plan_result.clear();
   for(int i=0;i<divide_control_point;i++){
@@ -224,12 +230,14 @@ void root_path_finder::spline_root_path(int deg, int node_num, float resolution)
   x_path.data.clear();
   y_path.data.clear();
 
-  spline.setCtrlp(ctrlp);
+      spline.setCtrlp(ctrlp);
+
 
   std::vector<float> spline_result;
   float spline_resolution = 0.0f;
   spline_pose.header.frame_id="base_link";
   float spline_res  = 1/resolution;
+
     for(int i=0;i<resolution;i++)
     {
       spline_result = spline.evaluate(spline_resolution).result();

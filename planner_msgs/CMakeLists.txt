@@ -10,6 +10,8 @@ find_package(catkin REQUIRED
 add_message_files(
    FILES
    Mapbuilder.msg   
+   foot_info.msg
+   foot_info_array.msg
 )
 
 generate_messages(

@@ -79,7 +79,7 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
     ui.edit_seg_num->setText("3");
 
     ui.edit_footdist->setText("0.255588");
-    ui.edit_onestep->setText("0.2");
+    ui.edit_onestep->setText("0.15");
 
     ui.edit_seg_dist_threshold->setText("0.03");
 
@@ -233,6 +233,10 @@ void MainWindow::stateButtonClicked(){
        val[0] = tmp.toFloat();
        tmp = ui.edit_relstep->text();
        val[1] = tmp.toFloat();
+       add_List.clear();
+       remove_List.clear();
+       add_model->setStringList(add_List);
+       remove_model->setStringList(remove_List);
      }
    else if(objName.compare("button_obstacle_potential_field")==0){
        state = "obstacle_potential_field";
@@ -343,7 +347,8 @@ void MainWindow::updatesegmentationinfo()
   if(qnode.segment_recv_msg.state == "seg_plane")
   {
     int seg_plane_num  = qnode.segment_recv_msg.id;
-
+    add_List.clear();
+    remove_List.clear();
     QString tmp;
     add_List << "remained";
     for(size_t i=0;i<seg_plane_num;i++)
