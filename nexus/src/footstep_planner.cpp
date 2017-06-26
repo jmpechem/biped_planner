@@ -158,21 +158,168 @@ void footstep_planner::foot_draw(double x,double y, tf::Quaternion q_input,int n
   foot_step_lists.foot_steps.push_back(foot_step_tmp);
 }
 
-void footstep_planner::init_foot_pose()
+void footstep_planner::init_foot_pose(float init_x,float init_y,double d,tf::Quaternion q_init)
 {
+  foot_draw(init_x,init_y-d,q_init,cnt_of_foot,false);
+  cnt_of_foot++;
+  foot_draw(init_x,init_y+d,q_init,cnt_of_foot,true);
+  cnt_of_foot++;
+  double delt_xi = init_x - path_x.at(0);
+  double delt_yi = init_y - path_y.at(0);
+  double dAnglei = -atan2(delt_xi , delt_yi);
+  float alpha_delta = deg2rad(10.0); // deg scale
+  float alpha_limit = deg2rad(20.0); // deg scale
 
+  tf::Matrix3x3 mi(q_init);
+  double ri, pi, yi;
+  mi.getRPY(ri, pi, yi);
+
+  dAnglei = dAnglei + 1.57079632679;
+  if(rad2deg(dAnglei) >= 180 && rad2deg(dAnglei) <= 270)
+  {
+      dAnglei = dAnglei - 3.14159265359;
+  }
+
+  double yaw = dAnglei;
+  cout << "angle diff: "<< rad2deg(yaw) << endl;
+  tf::Quaternion q_rot_i;
+
+  /*for(int i=0;i<10;i++)
+  {
+      if(abs(rad2deg(yaw)) >= alpha_limit)
+      {
+
+          if(dAnglei > 0)
+          {
+              yaw = yaw-alpha_delta;
+              q_rot_i.setEulerZYX(yaw,0.0f,0.0f);
+              foot_draw(init_x,init_y-d,q_rot_i,cnt_of_foot,false);
+              cnt_of_foot++;
+              foot_draw(init_x,init_y+d,q_rot_i,cnt_of_foot,true);
+              cnt_of_foot++;
+          }
+          else if(dAnglei < 0)
+          {
+              yaw = yaw+alpha_delta;
+              q_rot_i.setEulerZYX(yaw,0.0f,0.0f);
+              foot_draw(init_x,init_y-d,q_rot_i,cnt_of_foot,false);
+              cnt_of_foot++;
+              foot_draw(init_x,init_y+d,q_rot_i,cnt_of_foot,true);
+              cnt_of_foot++;
+
+          }
+      }
+  }*/
+  double xi_shift = -sin(yi)*d;
+  double yi_shift = cos(yi)*d;
+  foot_draw(path_x.at(0)-xi_shift,path_y.at(0)-yi_shift,q_init,cnt_of_foot,false);
+  cnt_of_foot++;
+  foot_draw(path_x.at(0)+xi_shift,path_y.at(0)+yi_shift,q_init,cnt_of_foot,true);
+  cnt_of_foot++;
 }
 
-void footstep_planner::final_foot_pose()
+void footstep_planner::final_foot_pose(float goal_x,float goal_y,double final_yaw,bool final_left_start,double d,tf::Quaternion q_final)
 {
+  tf::Quaternion qf = tf::createQuaternionFromYaw(final_yaw);
+  double xf_shift = -sin(final_yaw)*d;
+  double yf_shift = cos(final_yaw)*d;
 
+  if(final_left_start)
+  {
+      foot_draw(goal_x-xf_shift,goal_y-yf_shift,qf,cnt_of_foot,false);
+      cnt_of_foot++;
+      foot_draw(goal_x+xf_shift,goal_y+yf_shift,qf,cnt_of_foot,true);
+      cnt_of_foot++;
+  }
+  else
+  {
+      foot_draw(goal_x+xf_shift,goal_y+yf_shift,qf,cnt_of_foot,true);
+      cnt_of_foot++;
+      foot_draw(goal_x-xf_shift,goal_y-yf_shift,qf,cnt_of_foot,false);
+      cnt_of_foot++;
+  }
+
+  tf::Matrix3x3 mg(q_final);
+  double rg, pg, yg;
+  mg.getRPY(rg, pg, yg);
+
+  float alpha_delta = deg2rad(10.0); // deg scale
+  float alpha_limit = deg2rad(20.0); // deg scale
+  double goal_angle_diff;
+
+  goal_angle_diff = yg - final_yaw;
+  double goal_yaw = final_yaw;
+
+
+  if( abs(goal_angle_diff) >= alpha_limit)
+  {
+       int iter_num = (int)(abs( rad2deg(goal_angle_diff))/rad2deg(alpha_delta));
+       for(int i=0;i<iter_num;i++)
+       {
+          if(goal_angle_diff > 0)
+          {
+                goal_yaw = goal_yaw + alpha_delta;
+          }
+          else
+          {
+                goal_yaw = goal_yaw - alpha_delta;
+          }
+          double xg_shift = -sin(goal_yaw)*d;
+          double yg_shift = cos(goal_yaw)*d;
+          tf::Quaternion q_goal = tf::createQuaternionFromYaw(goal_yaw);
+          if(final_left_start)
+          {
+              foot_draw(goal_x-xg_shift,goal_y-yg_shift,q_goal,cnt_of_foot,false);
+              cnt_of_foot++;
+              foot_draw(goal_x+xg_shift,goal_y+yg_shift,q_goal,cnt_of_foot,true);
+              cnt_of_foot++;
+          }
+          else
+          {
+              foot_draw(goal_x+xg_shift,goal_y+yg_shift,q_goal,cnt_of_foot,true);
+              cnt_of_foot++;
+              foot_draw(goal_x-xg_shift,goal_y-yg_shift,q_goal,cnt_of_foot,false);
+              cnt_of_foot++;
+          }
+
+
+       }
+  }
+
+  /*
+  tf::Matrix3x3 mg(q_final);
+  double rg, pg, yg;
+  mg.getRPY(rg, pg, yg);
+  int x_end = path_x.size()-1;
+  int y_end = path_y.size()-1;
+  double xg_shift = -sin(yg)*d;
+  double yg_shift = cos(yg)*d;
+
+  double delt_xf = goal_x - path_x.at(x_end);
+  double delt_yf = goal_y - path_y.at(y_end);
+  double dAnglei = -atan2(delt_xf , delt_yf);
+  float alpha_delta = deg2rad(10.0); // deg scale
+  float alpha_limit = deg2rad(20.0); // deg scale
+
+
+  if( (cnt_of_foot%2) == 1)
+  {
+      //foot_draw(path_x.at(x_end)+xg_shift,path_y.at(y_end)+yg_shift,qg,cnt_of_foot,true);
+      foot_draw(goal_xy[0]+xg_shift,goal_xy[1]+yg_shift,q_final,cnt_of_foot,true);
+      cnt_of_foot++;
+      foot_draw(goal_xy[0]-xg_shift,goal_xy[1]-yg_shift,q_final,cnt_of_foot,false);
+      cnt_of_foot++;
+  }
+  else if( (cnt_of_foot%2) == 0)
+  {
+      foot_draw(goal_xy[0]-xg_shift,goal_xy[1]-yg_shift,q_final,cnt_of_foot,false);
+      cnt_of_foot++;
+      foot_draw(goal_xy[0]+xg_shift,goal_xy[1]+yg_shift,q_final,cnt_of_foot,true);
+      cnt_of_foot++;
+  }
+  */
 }
 
-void footstep_planner::create_footpose()
-{
-  float d= 0.1;
-
-}
 int footstep_planner::find_one_step_max_node(int start_node,double max_length)
 {
   int max_node;
@@ -215,7 +362,8 @@ void footstep_planner::creat_footstep(double foot_distance, double onestep)
   double xi_shift = -sin(yi)*d;
   double yi_shift = cos(yi)*d;
 
-
+  init_foot_pose(init_xy[0],init_xy[1],d,qi);
+/*
   foot_draw(init_xy[0],init_xy[1]-d,qi,cnt_of_foot,false);
   cnt_of_foot++;
   foot_draw(init_xy[0],init_xy[1]+d,qi,cnt_of_foot,true);
@@ -225,7 +373,7 @@ void footstep_planner::creat_footstep(double foot_distance, double onestep)
   cnt_of_foot++;
   foot_draw(path_x.at(0)+xi_shift,path_y.at(0)+yi_shift,qi,cnt_of_foot,true);
   cnt_of_foot++;
-
+*/
   int start_node_index = 0;
   int cur_max_index = 0;
 
@@ -237,6 +385,7 @@ void footstep_planner::creat_footstep(double foot_distance, double onestep)
   bool find_end_node = false;
   double yaw_cur, yaw_new, yaw_diff;
   double yaw_cal_final;
+  bool isfinal_left = false;
   for(size_t i=0; i<100;i++)
   {
     cur_max_index = find_one_step_max_node(start_node_index,step_max_length);
@@ -256,11 +405,29 @@ void footstep_planner::creat_footstep(double foot_distance, double onestep)
     {
         cout << "end of loop!" << endl;
         goal_start_node_index = start_node_index;
-        goal_max_node_index = cur_max_index;
-        yaw_cal_final = yaw_cal;
+        goal_max_node_index = cur_max_index;        
         break;     
     }
-    else
+    tf::Quaternion qc = tf::createQuaternionFromYaw(yaw_cal); // atan2 problem?
+    tf::Matrix3x3 mc(qc);
+    double rc,pc,yc;
+    mc.getRPY(rc,pc,yc);
+    double xc_shift = -sin(yc)*d;
+    double yc_shift = cos(yc)*d;
+    if( (cnt_of_foot%2) == 0 )
+    {
+     foot_draw(path_x.at(cur_max_index)-xc_shift,path_y.at(cur_max_index)-yc_shift,qc,cnt_of_foot,false);
+     isfinal_left = false;
+    }
+    else if( (cnt_of_foot%2) == 1)
+    {
+      foot_draw(path_x.at(cur_max_index)+xc_shift,path_y.at(cur_max_index)+yc_shift,qc,cnt_of_foot,true);
+      isfinal_left = true;
+    }
+    cnt_of_foot++;
+    yaw_cal_final = yaw_cal;
+    start_node_index = cur_max_index;
+    /*else
     {
         if(abs(yaw_diff) < alpha_limit)
         {
@@ -305,10 +472,10 @@ void footstep_planner::creat_footstep(double foot_distance, double onestep)
             cnt_of_foot++;
             yaw_cur = input_yaw;
         }
-     }
+     }*/
   }
   // end of foot position and orientation
-  for(size_t i=0; i<100;i++)
+  /*for(size_t i=0; i<100;i++)
   {
         double yaw_cal = root_path_slope_cal(goal_start_node_index,goal_max_node_index);
         yaw_cal = yaw_cal + 1.57079632679;
@@ -320,7 +487,17 @@ void footstep_planner::creat_footstep(double foot_distance, double onestep)
         yaw_new = yaw_cal;
         yaw_diff = yaw_new - yaw_cur;
   }
-
+*/
+  /*
+  tf::Quaternion qf = tf::createQuaternionFromYaw(yaw_cal_final);
+  double xf_shift = -sin(yaw_cal_final)*d;
+  double yf_shift = cos(yaw_cal_final)*d;
+  foot_draw(goal_xy[0]-xf_shift,goal_xy[1]-yf_shift,qf,cnt_of_foot,false);
+  cnt_of_foot++;
+  foot_draw(goal_xy[0]+xf_shift,goal_xy[1]+yf_shift,qf,cnt_of_foot,true);
+  cnt_of_foot++;*/
+  final_foot_pose(goal_xy[0],goal_xy[1],yaw_cal_final,isfinal_left,d,qg);
+/*
   tf::Matrix3x3 mg(qg);
   double rg, pg, yg;
   mg.getRPY(rg, pg, yg);
@@ -345,7 +522,7 @@ void footstep_planner::creat_footstep(double foot_distance, double onestep)
       //foot_draw(path_x.at(x_end)+xg_shift,path_y.at(y_end)+yg_shift,qg,cnt_of_foot,true);
       foot_draw(goal_xy[0]+xg_shift,goal_xy[1]+yg_shift,qg,cnt_of_foot,true);
       cnt_of_foot++;
-  }
+  }*/
 
 
   foot_box_pub.publish(foot_markers);
@@ -451,9 +628,31 @@ void footstep_planner::footstep_planner_cmd(const planner_msgs::Mapbuilder::Cons
     save_offline_footstep();
 
   }
-  else if(cmd->state == "t2")
+  else if(cmd->state == "t1") // 임시로 기록데이 터읽어 서그리 기테스 트
   {
     ROS_INFO("%s",cmd->state.c_str());
+    ifstream fin("/home/jimin/catkin_ws/src/nexus/data/narrow_str_footstepInfo.txt");
+    //char inputString[1000];
+    string str;
+    int i = 0;
+    foot_markers.markers.clear();
+    while(!fin.eof()){
+        getline(fin,str);
+        cout << str << endl;
+        istringstream is(str);
 
+        foot_list tmp;
+        is >> tmp.x >> tmp.y >> tmp.z >> tmp.roll >> tmp.pitch >> tmp.yaw >> tmp.foot_kind;
+        cout << tmp.x << ", " << tmp.y << ", "<< tmp.z<< ", " << tmp.roll<< ", " << tmp.pitch<< ", " << tmp.yaw<< ", " << tmp.foot_kind << endl;
+        tf::Quaternion q_in;
+        q_in.setEulerZYX(tmp.yaw,tmp.pitch,tmp.roll);
+        foot_draw(tmp.x,tmp.y,q_in,i,tmp.foot_kind);
+        i++;
+    }
+    foot_box_pub.publish(foot_markers);
+    if(fin.is_open()==true) // 파일 닫기
+    {
+       fin.close();
+    }
   }
 }

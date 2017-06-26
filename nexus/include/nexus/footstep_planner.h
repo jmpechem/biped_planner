@@ -11,13 +11,13 @@ class footstep_planner{
   void goal_yaw_cb(const geometry_msgs::PoseStamped::ConstPtr &g_pose);
   void footstep_planner_cmd(const planner_msgs::Mapbuilder::ConstPtr &cmd);
   void creat_footstep(double foot_distance, double onestep);
-  void create_footpose();
+
   double root_path_slope_cal(int start_node, int end_node);
   void foot_draw(double x,double y, tf::Quaternion q_input ,int num,bool isleft);
   void save_offline_footstep();
   int find_one_step_max_node(int start_node,double max_length);
-  void init_foot_pose();
-  void final_foot_pose();
+  void init_foot_pose(float init_x,float init_y,double d,tf::Quaternion q_init);
+  void final_foot_pose(float goal_x,float goal_y,double final_yaw,bool final_left_start,double d,tf::Quaternion q_final);
 
   private:
   ros::NodeHandle f_nh;
