@@ -7,7 +7,7 @@ traversability::traversability()
 { 
   isfirstcb = true;
   search_radius = 0.1f;
-  big_radius = 0.2f;
+  big_radius = 0.25f;
   reference_height = 0.0f;
   traversability_cmd_sub = t_nh.subscribe<planner_msgs::Mapbuilder>("/map_builder_cmd",100,&traversability::traversability_cmd,this);
   grid_map_sub = t_nh.subscribe("grid_map",100,&traversability::grid_map_cb,this);
@@ -18,6 +18,8 @@ traversability::traversability()
   total_segmented_number = 0;
   obstacle_planes.clear();
   not_obs_planes.clear();
+  large_normal_vector.clear();
+  small_normal_vector.clear();
   //grid_map_plane_seg_pub = t_nh.advertise<sensor_msgs::PointCloud2>("/plane_seg",100);
 }
 void traversability::segmented_grid_map_cb(const sensor_msgs::PointCloud2::ConstPtr &clouds)
@@ -65,21 +67,62 @@ void traversability::grid_map_cb(const grid_map_msgs::GridMap& map_input){
       grid_map_data.add("sub_normal_x");
       grid_map_data.add("sub_normal_y");
       grid_map_data.add("sub_normal_z");
+      grid_map_data.add("diff_normal_x");
+      grid_map_data.add("diff_normal_y");
+      grid_map_data.add("diff_normal_z");
+      grid_map_data.add("diff_norms");
       grid_map_data.add("segment");
       isfirstcb = false;
  }
-  normal_extraction(search_radius);
+  large_normal_vector.clear();
+  small_normal_vector.clear();
+  large_normal_vector.push_back("normal_x");
+  large_normal_vector.push_back("normal_y");
+  large_normal_vector.push_back("normal_z");
+  normal_extraction(big_radius,large_normal_vector);
+  small_normal_vector.push_back("sub_normal_x");
+  small_normal_vector.push_back("sub_normal_y");
+  small_normal_vector.push_back("sub_normal_z");
+  normal_extraction(search_radius,small_normal_vector);
+
+  diff_normal(large_normal_vector,small_normal_vector);
 }
-void traversability::normal_extraction(float radius)
+void traversability::diff_normal(vector<string> large_name,vector<string> small_name)
+{
+  double min_diff;
+  double max_diff;
+  int i=0;
+  for(GridMapIterator iter(grid_map_data);!iter.isPastEnd();++iter)
+  {
+      if(!grid_map_data.isValid(*iter,"elevation")) continue;
+      if(!grid_map_data.isValid(*iter,large_name.at(0))) continue;
+      if(!grid_map_data.isValid(*iter,large_name.at(1))) continue;
+      if(!grid_map_data.isValid(*iter,large_name.at(2))) continue;
+      if(!grid_map_data.isValid(*iter,small_name.at(0))) continue;
+      if(!grid_map_data.isValid(*iter,small_name.at(1))) continue;
+      if(!grid_map_data.isValid(*iter,small_name.at(2))) continue;
+      double dx = grid_map_data.at("diff_normal_x", *iter) = (grid_map_data.at("sub_normal_x", *iter) - grid_map_data.at("normal_x", *iter))/2.0;
+      double dy = grid_map_data.at("diff_normal_y", *iter) = (grid_map_data.at("sub_normal_y", *iter) - grid_map_data.at("normal_y", *iter))/2.0;
+      double dz = grid_map_data.at("diff_normal_z", *iter) = (grid_map_data.at("sub_normal_z", *iter) - grid_map_data.at("normal_z", *iter))/2.0;
+      grid_map_data.at("diff_norms", *iter) = sqrt(dx*dx+dy*dy+dz*dz);
+      if(i==0){ min_diff = grid_map_data.at("diff_norms", *iter); max_diff = grid_map_data.at("diff_norms", *iter);}
+      if(min_diff >= grid_map_data.at("diff_norms", *iter)) {min_diff = grid_map_data.at("diff_norms", *iter);}
+      if(max_diff <= grid_map_data.at("diff_norms", *iter)) {max_diff = grid_map_data.at("diff_norms", *iter);}
+      i++;
+  }
+  cout << "min max diff : " << min_diff << ", " << max_diff << endl;
+}
+
+void traversability::normal_extraction(float radius,vector<string> normal_name_vector)
 {
   if(grid_map_data.exists("elevation"))
   {
   Eigen::Vector3d surfaceNormalPositiveAxis_;
   surfaceNormalPositiveAxis_ = grid_map::Vector3::UnitZ();
-  vector<string> surfaceNormalTypes;
-  surfaceNormalTypes.push_back("normal_x");
-  surfaceNormalTypes.push_back("normal_y");
-  surfaceNormalTypes.push_back("normal_z");
+  vector<string> surfaceNormalTypes = normal_name_vector;
+  //surfaceNormalTypes.push_back("normal_x");
+  //surfaceNormalTypes.push_back("normal_y");
+  //surfaceNormalTypes.push_back("normal_z");
 
   for(GridMapIterator iter(grid_map_data);!iter.isPastEnd();++iter)
   {
@@ -132,9 +175,9 @@ void traversability::normal_extraction(float radius)
        }
        Vector3 eigenvector = eigenvectors.col(smallestId);
        if (eigenvector.dot(surfaceNormalPositiveAxis_) < 0.0) eigenvector = -eigenvector;
-       grid_map_data.at("normal_x", *iter) = eigenvector.x();
-       grid_map_data.at("normal_y", *iter) = eigenvector.y();
-       grid_map_data.at("normal_z", *iter) = eigenvector.z();
+       grid_map_data.at(surfaceNormalTypes.at(0), *iter) = eigenvector.x();
+       grid_map_data.at(surfaceNormalTypes.at(1), *iter) = eigenvector.y();
+       grid_map_data.at(surfaceNormalTypes.at(2), *iter) = eigenvector.z();
 
 
    }    

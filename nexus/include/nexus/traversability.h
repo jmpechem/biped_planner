@@ -7,7 +7,8 @@ class traversability{
   void plane_num_cb(const planner_msgs::Mapbuilder::ConstPtr& num);
   void grid_map_cb(const grid_map_msgs::GridMap& map_input);
   void segmented_grid_map_cb(const sensor_msgs::PointCloud2::ConstPtr &clouds);
-  void normal_extraction(float radius);
+  void normal_extraction(float radius,vector<string> normal_name_vector);
+  void diff_normal(vector<string> large_name,vector<string> small_name);
   void obstacle_finder(float slope, float rel_height);
   void obstacle_potential_field(float pf_radius,float grid_resolution);
 
@@ -31,5 +32,7 @@ class traversability{
 
   vector<int> obstacle_planes;
   vector<int> not_obs_planes;
+  vector<string> large_normal_vector;
+  vector<string> small_normal_vector;
   boost::recursive_mutex    TraversabilityMutex_;
 };

@@ -26,21 +26,96 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/surface/convex_hull.h>
 #include "planner_msgs/Mapbuilder.h"
 
 using namespace std;
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr plane_clouds (new pcl::PointCloud<pcl::PointXYZ>);
+pcl::PointCloud<pcl::PointXYZ>::Ptr pre_seg_clouds (new pcl::PointCloud<pcl::PointXYZ>);
+pcl::PointCloud<pcl::PointXYZI>::Ptr dist_seg_clouds (new pcl::PointCloud<pcl::PointXYZI>);
+pcl::PointCloud<pcl::PointXYZ>::Ptr convex_clouds (new pcl::PointCloud<pcl::PointXYZ>);
+pcl::PointCloud<pcl::PointXYZ>::Ptr convex_hull (new pcl::PointCloud<pcl::PointXYZ>);
+pcl::PointCloud<pcl::PointXYZI>::Ptr final_seg_clouds (new pcl::PointCloud<pcl::PointXYZI>);
 ros::Publisher segmented_cloud_pub;
 ros::Publisher segment_plane_pub;
+ros::Publisher segment_dist_pub;
+int dist_seg_num = 0;
+int conv_seg_num = 0;
 
 void seg_cloud_cb(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
   pcl::fromROSMsg(*msg,*plane_clouds);  
 }
-void plane_segmentation(int number_of_plane,float dist_threshold)
+
+void distance_clustering(float grid_size)
 {
+
+  float dist_threshold = grid_size*sqrt(3);
+  pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+  tree->setInputCloud (pre_seg_clouds);
+  std::vector<pcl::PointIndices> cluster_indices;
+  pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+  ec.setClusterTolerance (dist_threshold);
+  ec.setMinClusterSize (10);
+  ec.setMaxClusterSize (25000);
+  ec.setSearchMethod (tree);
+  ec.setInputCloud (pre_seg_clouds);
+  ec.extract (cluster_indices);
+
+  double foot_area = sqrt(0.1*0.1 + 0.09*0.09);
+  //pcl::PointCloud<pcl::PointXYZI> TotalCloud;
+  pcl::ConvexHull<pcl::PointXYZ> hull;
+  for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
+  {
+      convex_clouds->clear();
+      convex_hull->clear();
+      for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit)
+      {
+          pcl::PointXYZ pt = pre_seg_clouds->points[*pit];
+          pcl::PointXYZI pt2;
+          pt2.x = pt.x, pt2.y = pt.y, pt2.z = pt.z;
+          pt2.intensity = (float)(dist_seg_num + 1);
+          dist_seg_clouds->push_back(pt2);
+          convex_clouds->push_back(pt);
+          //TotalCloud.push_back(pt2);
+      }
+      hull.setInputCloud(convex_clouds);
+      hull.setComputeAreaVolume(true);
+      hull.reconstruct(*convex_hull);
+      cout << dist_seg_num << "th seg area : " <<  hull.getTotalArea() << endl;
+      dist_seg_num++;
+      if(hull.getTotalArea() > foot_area)
+      {
+          for(int t=0; t<convex_clouds->size();t++)
+          {
+              pcl::PointXYZ pt3 = convex_clouds->points[t];
+              pcl::PointXYZI pt4;
+              pt4.x = pt3.x, pt4.y = pt3.y, pt4.z = pt3.z;
+              pt4.intensity = (float)(conv_seg_num+1);
+              final_seg_clouds->push_back(pt4);
+          }
+          conv_seg_num++;
+      }
+  }
+
+
+  pcl::PCLPointCloud2 cloud_p;
+  pcl::toPCLPointCloud2(*final_seg_clouds, cloud_p);
+  sensor_msgs::PointCloud2 output;
+  pcl_conversions::fromPCL(cloud_p, output);
+  output.header.frame_id = "base_link";
+  segment_dist_pub.publish(output);
+
+
+}
+
+void plane_segmentation(int number_of_plane,float dist_threshold,float grid_size)
+{
+  dist_seg_clouds->clear();
+  final_seg_clouds->clear();
   pcl::PointCloud<pcl::PointXYZ> cloud;
   pcl::PointXYZ temp;
   for(size_t i=0;i<plane_clouds->size();i++)
@@ -98,13 +173,17 @@ void plane_segmentation(int number_of_plane,float dist_threshold)
            pcl::PointXYZI pt2;
            pt2.x = pt.x, pt2.y = pt.y, pt2.z = pt.z;
            pt2.intensity = (float)(i + 1);
-
+           pre_seg_clouds->push_back(pt);
            TotalCloud.push_back(pt2);
         }
+        distance_clustering(grid_size);
+        pre_seg_clouds->clear();
         seg_plane_num++;
         ROS_INFO("%d. remained point cloud = %d", i, (int)cloud.size());
     }
 
+    dist_seg_num = 0;
+    conv_seg_num = 0;
       // Convert To ROS data type
     pcl::PCLPointCloud2 cloud_p;
     pcl::toPCLPointCloud2(TotalCloud, cloud_p);
@@ -120,13 +199,15 @@ void plane_segmentation(int number_of_plane,float dist_threshold)
     segment_plane_pub.publish(plane_info);
 }
 
+
+
 void map_builder_cb(const planner_msgs::Mapbuilder::ConstPtr &cmd)
 {
 
   if(cmd->state == "step_detect")
   {
    ROS_INFO("%s",cmd->state.c_str());
-   plane_segmentation(cmd->id,cmd->val1);
+   plane_segmentation(cmd->id,cmd->val1,cmd->val2);
 
   }
   else if(cmd->state == "save_stl")
@@ -147,6 +228,7 @@ int main(int argc, char** argv)
   ros::Subscriber hcut_point_cloud_sub = nh.subscribe<sensor_msgs::PointCloud2>("plane_seg",1,seg_cloud_cb);
   segmented_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("plane_seg_result",1);
   segment_plane_pub = nh.advertise<planner_msgs::Mapbuilder>("segment_info_recv",1);
+  segment_dist_pub = nh.advertise<sensor_msgs::PointCloud2>("/distance_seg_result",1);
   ros::Rate rate(10.0);
 
 

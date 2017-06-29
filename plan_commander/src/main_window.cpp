@@ -248,9 +248,18 @@ void MainWindow::stateButtonClicked(){
    else if(objName.compare("button_step_detect")==0){
        state = "step_detect";
        QString tmp = ui.edit_seg_num->text();
-       id = tmp.toInt();
+       if(tmp == "inf")
+       {
+          id = 0;
+       }
+       else
+       {
+          id = tmp.toInt();
+       }
        tmp = ui.edit_seg_dist_threshold->text();
        val[0] = tmp.toFloat();
+       tmp = ui.edit_gridsize->text();
+       val[1] = tmp.toFloat();
      }
    else if(objName.compare("button_zeroinit")==0){
        state = "zero_init";
