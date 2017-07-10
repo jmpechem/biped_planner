@@ -1,5 +1,6 @@
 #include "def_include.h"
 
+namespace jm_traversability{
 class traversability{
   public:
   traversability();
@@ -36,3 +37,4 @@ class traversability{
   vector<string> small_normal_vector;
   boost::recursive_mutex    TraversabilityMutex_;
 };
+}

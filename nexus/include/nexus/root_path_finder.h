@@ -1,7 +1,7 @@
 #include "def_include.h"
 #include "nexus/Dstar.h"
 #include "nexus/tinysplinecpp.h"
-
+namespace jm_path_finder{
 class root_path_finder{
   public:
   root_path_finder();
@@ -48,3 +48,4 @@ class root_path_finder{
 
 
 };
+}

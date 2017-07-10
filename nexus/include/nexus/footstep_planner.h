@@ -1,6 +1,6 @@
 #include "def_include.h"
 
-
+namespace jm_footstep_planner{
 class footstep_planner{
   public:
   footstep_planner();
@@ -45,3 +45,4 @@ class footstep_planner{
   planner_msgs::foot_info_array foot_step_lists;
 
 };
+}

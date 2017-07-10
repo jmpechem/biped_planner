@@ -10,7 +10,6 @@
 *****************************************************************************/
 
 #include <QtGui>
-#include <QMessageBox>
 #include <iostream>
 #include "../include/plan_commander/main_window.hpp"
 
@@ -72,8 +71,8 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
     ui.edit_filtersize->setText("0.03");
     ui.edit_gridsize->setText("0.05");
 
-    ui.edit_slope->setText("10");
-    ui.edit_relstep->setText("0.1");
+    ui.edit_slope->setText("15");
+
     ui.edit_obstacle_radius->setText("0.1");
 
     ui.edit_seg_num->setText("3");
@@ -207,7 +206,17 @@ void MainWindow::stateButtonClicked(){
    int id = 0;
    float val[3] = {0.0,0.0,0.0};
    if(objName.compare("button_pcd")==0){
-        state = "load_pcd";        
+       QString filename = QFileDialog::getOpenFileName(this,tr("Open File"),"/home/jimin/catkin_ws/src/","PCD File (*.pcd)");
+       /*QMessageBox msgBox;
+       msgBox.setText(filename);
+       msgBox.exec();*/
+       std::string file_path_name;
+       file_path_name = filename.toStdString();
+       state = file_path_name;
+       id = 123;
+       val[0] = 1.0f;
+       val[1] = 2.0f;
+       val[2] = 3.0f;
      }
    else if(objName.compare("button_online")==0){
         state = "load_onlinedata";
@@ -229,14 +238,14 @@ void MainWindow::stateButtonClicked(){
      }
    else if(objName.compare("button_obstacle_finder")==0){
        state = "find_obstacle";
-       QString tmp = ui.edit_slope->text();
+       /*QString tmp = ui.edit_slope->text();
        val[0] = tmp.toFloat();
        tmp = ui.edit_relstep->text();
        val[1] = tmp.toFloat();
        add_List.clear();
        remove_List.clear();
        add_model->setStringList(add_List);
-       remove_model->setStringList(remove_List);
+       remove_model->setStringList(remove_List);*/
      }
    else if(objName.compare("button_obstacle_potential_field")==0){
        state = "obstacle_potential_field";
@@ -260,6 +269,8 @@ void MainWindow::stateButtonClicked(){
        val[0] = tmp.toFloat();
        tmp = ui.edit_gridsize->text();
        val[1] = tmp.toFloat();
+       tmp = ui.edit_slope->text();
+       val[2] = tmp.toFloat();
      }
    else if(objName.compare("button_zeroinit")==0){
        state = "zero_init";

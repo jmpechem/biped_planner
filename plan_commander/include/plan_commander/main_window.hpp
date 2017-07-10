@@ -17,6 +17,8 @@
 #include "qnode.hpp"
 #include <QPushButton>
 #include <QLineEdit>
+#include <QFileDialog>
+#include <QMessageBox>
 /*****************************************************************************
 ** Namespace
 *****************************************************************************/

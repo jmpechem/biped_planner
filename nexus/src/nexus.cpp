@@ -4,6 +4,10 @@
 #include "nexus/root_path_finder.h"
 #include "nexus/footstep_planner.h"
 
+using namespace jm_map;
+using namespace jm_traversability;
+using namespace jm_path_finder;
+using namespace jm_footstep_planner;
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "nexus_system");

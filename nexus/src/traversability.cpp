@@ -1,5 +1,5 @@
 #include "nexus/traversability.h"
-
+namespace jm_traversability{
 GridMap grid_map_data;
 pcl::PointCloud<pcl::PointXYZI>::Ptr seg_clouds (new pcl::PointCloud<pcl::PointXYZI>);
 
@@ -40,13 +40,13 @@ void traversability::segmented_grid_map_cb(const sensor_msgs::PointCloud2::Const
       if(!grid_map_data.getIndex(position, index)) continue;
       if(grid_map_data.isValid(index,"elevation")){grid_map_data.at("segment",index) = seg_clouds->points[i].intensity;}
   }
-  //boost::recursive_mutex::scoped_lock scopedLockmap(TraversabilityMutex_);
+
   ros::Time time = ros::Time::now();
   grid_map_data.setTimestamp(time.toNSec());
   grid_map_msgs::GridMap message;
   GridMapRosConverter::toMessage(grid_map_data, message);
   grid_map_data_pub.publish(message);
-  //scopedLockmap.unlock();
+
 }
 
 void traversability::grid_map_cb(const grid_map_msgs::GridMap& map_input){
@@ -54,9 +54,9 @@ void traversability::grid_map_cb(const grid_map_msgs::GridMap& map_input){
   grid_map::GridMapRosConverter::fromMessage(map_input,grid_map_data);
   if(isfirstcb)
   {
-      grid_map_data.add("normal_x");
-      grid_map_data.add("normal_y");
-      grid_map_data.add("normal_z");
+      //grid_map_data.add("normal_x");
+      //grid_map_data.add("normal_y");
+      //grid_map_data.add("normal_z");
       grid_map_data.add("slope");
       grid_map_data.add("rel_height");
       grid_map_data.add("obstacle");
@@ -74,7 +74,7 @@ void traversability::grid_map_cb(const grid_map_msgs::GridMap& map_input){
       grid_map_data.add("segment");
       isfirstcb = false;
  }
-  large_normal_vector.clear();
+  /*large_normal_vector.clear();
   small_normal_vector.clear();
   large_normal_vector.push_back("normal_x");
   large_normal_vector.push_back("normal_y");
@@ -85,7 +85,7 @@ void traversability::grid_map_cb(const grid_map_msgs::GridMap& map_input){
   small_normal_vector.push_back("sub_normal_z");
   normal_extraction(search_radius,small_normal_vector);
 
-  diff_normal(large_normal_vector,small_normal_vector);
+  diff_normal(large_normal_vector,small_normal_vector);*/
 }
 void traversability::diff_normal(vector<string> large_name,vector<string> small_name)
 {
@@ -489,4 +489,5 @@ void traversability::obstacle_potential_field(float pf_radius,float grid_resolut
   GridMapRosConverter::toMessage(grid_map_data, message);
   grid_map_data_pub.publish(message);
 
+}
 }

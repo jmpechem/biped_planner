@@ -1,5 +1,5 @@
 #include "nexus/root_path_finder.h"
-
+namespace jm_path_finder{
 GridMap root_grid_map_data;
 
 root_path_finder::root_path_finder()
@@ -321,4 +321,5 @@ void root_path_finder::root_path_finder_cmd(const planner_msgs::Mapbuilder::Cons
     spline_root_path((int)cmd->val1,(int)cmd->val2,cmd->val3);
   }
 
+}
 }

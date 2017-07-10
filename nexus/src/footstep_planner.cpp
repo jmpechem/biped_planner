@@ -1,6 +1,6 @@
 #include "nexus/footstep_planner.h"
 #include <fstream>
-
+namespace jm_footstep_planner{
 GridMap footstep_grid_map_data;
 
 typedef struct foot_list{
@@ -655,4 +655,5 @@ void footstep_planner::footstep_planner_cmd(const planner_msgs::Mapbuilder::Cons
        fin.close();
     }
   }
+}
 }
