@@ -54,6 +54,11 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
     QObject::connect(ui.button_zeroinit, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
     QObject::connect(ui.button_save_footstep, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
 
+    QObject::connect(ui.button_start, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
+    QObject::connect(ui.button_reset, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
+    QObject::connect(ui.button_stop, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
+
+
     QObject::connect(ui.button_add, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
     QObject::connect(ui.button_remove, SIGNAL(clicked()),this,SLOT(stateButtonClicked()));
 
@@ -218,8 +223,17 @@ void MainWindow::stateButtonClicked(){
        val[1] = 2.0f;
        val[2] = 3.0f;
      }
+   else if(objName.compare("button_start")==0){
+        state = "run_assemble";
+     }
+   else if(objName.compare("button_stop")==0){
+        state = "disable_assemble";
+     }
    else if(objName.compare("button_online")==0){
         state = "load_onlinedata";
+     }
+   else if(objName.compare("button_reset")==0){
+        state = "reset_assemble";
      }
    else if(objName.compare("button_heightcut")==0){
         state = "height_cut";

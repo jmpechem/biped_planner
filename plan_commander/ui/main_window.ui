@@ -14,7 +14,7 @@
    <string>QRosApp</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/images.qrc">
+   <iconset resource="../../map_ui/resources/images.qrc">
     <normaloff>:/images/icon.png</normaloff>:/images/icon.png</iconset>
   </property>
   <property name="locale">
@@ -47,10 +47,10 @@
         <widget class="QPushButton" name="button_pcd">
          <property name="geometry">
           <rect>
-           <x>240</x>
+           <x>260</x>
            <y>60</y>
-           <width>85</width>
-           <height>27</height>
+           <width>121</width>
+           <height>71</height>
           </rect>
          </property>
          <property name="text">
@@ -60,10 +60,10 @@
         <widget class="QPushButton" name="button_online">
          <property name="geometry">
           <rect>
-           <x>40</x>
-           <y>60</y>
-           <width>132</width>
-           <height>27</height>
+           <x>30</x>
+           <y>86</y>
+           <width>171</width>
+           <height>51</height>
           </rect>
          </property>
          <property name="text">
@@ -185,6 +185,45 @@
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="button_start">
+         <property name="geometry">
+          <rect>
+           <x>30</x>
+           <y>40</y>
+           <width>51</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>start</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="button_stop">
+         <property name="geometry">
+          <rect>
+           <x>90</x>
+           <y>40</y>
+           <width>51</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>stop</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="button_reset">
+         <property name="geometry">
+          <rect>
+           <x>150</x>
+           <y>40</y>
+           <width>51</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>reset</string>
          </property>
         </widget>
        </widget>
@@ -926,7 +965,7 @@
   </action>
  </widget>
  <resources>
-  <include location="../resources/images.qrc"/>
+  <include location="../../map_ui/resources/images.qrc"/>
  </resources>
  <connections>
   <connection>

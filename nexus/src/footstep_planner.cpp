@@ -363,17 +363,7 @@ void footstep_planner::creat_footstep(double foot_distance, double onestep)
   double yi_shift = cos(yi)*d;
 
   init_foot_pose(init_xy[0],init_xy[1],d,qi);
-/*
-  foot_draw(init_xy[0],init_xy[1]-d,qi,cnt_of_foot,false);
-  cnt_of_foot++;
-  foot_draw(init_xy[0],init_xy[1]+d,qi,cnt_of_foot,true);
-  cnt_of_foot++;
 
-  foot_draw(path_x.at(0)-xi_shift,path_y.at(0)-yi_shift,qi,cnt_of_foot,false);
-  cnt_of_foot++;
-  foot_draw(path_x.at(0)+xi_shift,path_y.at(0)+yi_shift,qi,cnt_of_foot,true);
-  cnt_of_foot++;
-*/
   int start_node_index = 0;
   int cur_max_index = 0;
 
@@ -426,105 +416,9 @@ void footstep_planner::creat_footstep(double foot_distance, double onestep)
     }
     cnt_of_foot++;
     yaw_cal_final = yaw_cal;
-    start_node_index = cur_max_index;
-    /*else
-    {
-        if(abs(yaw_diff) < alpha_limit)
-        {
-            tf::Quaternion qc = tf::createQuaternionFromYaw(yaw_cal); // atan2 problem?
-            tf::Matrix3x3 mc(qc);
-            double rc,pc,yc;
-            mc.getRPY(rc,pc,yc);
-            double xc_shift = -sin(yc)*d;
-            double yc_shift = cos(yc)*d;
-            if( (cnt_of_foot%2) == 0 )
-            {
-             foot_draw(path_x.at(cur_max_index)-xc_shift,path_y.at(cur_max_index)-yc_shift,qc,cnt_of_foot,false);
-            }
-            else if( (cnt_of_foot%2) == 1)
-            {
-              foot_draw(path_x.at(cur_max_index)+xc_shift,path_y.at(cur_max_index)+yc_shift,qc,cnt_of_foot,true);
-            }
-            cnt_of_foot++;
-            yaw_cur = yaw_new;
-            start_node_index = cur_max_index;
-        }
-        else // rotation at current position
-        {
-            double input_yaw = 0.0f;
-            if(yaw_diff>0)
-            {
-                input_yaw = yaw_cur + alpha_delta;
-            }
-            else
-            {
-                input_yaw = yaw_cur - alpha_delta;
-            }
-            tf::Quaternion qc = tf::createQuaternionFromYaw(input_yaw); // atan2 problem?
-            tf::Matrix3x3 mc(qc);
-            double rc,pc,yc;
-            mc.getRPY(rc,pc,yc);
-            double xc_shift = -sin(yc)*d;
-            double yc_shift = cos(yc)*d;
-            foot_draw(path_x.at(start_node_index)+xc_shift,path_y.at(start_node_index)+yc_shift,qc,cnt_of_foot,true);
-            cnt_of_foot++;
-            foot_draw(path_x.at(start_node_index)-xc_shift,path_y.at(start_node_index)-yc_shift,qc,cnt_of_foot,false);
-            cnt_of_foot++;
-            yaw_cur = input_yaw;
-        }
-     }*/
-  }
-  // end of foot position and orientation
-  /*for(size_t i=0; i<100;i++)
-  {
-        double yaw_cal = root_path_slope_cal(goal_start_node_index,goal_max_node_index);
-        yaw_cal = yaw_cal + 1.57079632679;
-        if(rad2deg(yaw_cal) >= 180 && rad2deg(yaw_cal) <= 270)
-        {
-            yaw_cal = yaw_cal - 3.14159265359;
-        }
-        if(i==0) { yaw_cur = yi; }
-        yaw_new = yaw_cal;
-        yaw_diff = yaw_new - yaw_cur;
-  }
-*/
-  /*
-  tf::Quaternion qf = tf::createQuaternionFromYaw(yaw_cal_final);
-  double xf_shift = -sin(yaw_cal_final)*d;
-  double yf_shift = cos(yaw_cal_final)*d;
-  foot_draw(goal_xy[0]-xf_shift,goal_xy[1]-yf_shift,qf,cnt_of_foot,false);
-  cnt_of_foot++;
-  foot_draw(goal_xy[0]+xf_shift,goal_xy[1]+yf_shift,qf,cnt_of_foot,true);
-  cnt_of_foot++;*/
+    start_node_index = cur_max_index; 
+  } 
   final_foot_pose(goal_xy[0],goal_xy[1],yaw_cal_final,isfinal_left,d,qg);
-/*
-  tf::Matrix3x3 mg(qg);
-  double rg, pg, yg;
-  mg.getRPY(rg, pg, yg);
-  int x_end = path_x.size()-1;
-  int y_end = path_y.size()-1;
-  double xg_shift = -sin(yg)*d;
-  double yg_shift = cos(yg)*d;
-  if( (cnt_of_foot%2) == 1)
-  {
-      //foot_draw(path_x.at(x_end)+xg_shift,path_y.at(y_end)+yg_shift,qg,cnt_of_foot,true);
-      foot_draw(goal_xy[0]+xg_shift,goal_xy[1]+yg_shift,qg,cnt_of_foot,true);
-      cnt_of_foot++;
-      //foot_draw(path_x.at(x_end)-xg_shift,path_y.at(y_end)-yg_shift,qg,cnt_of_foot,false);
-      foot_draw(goal_xy[0]-xg_shift,goal_xy[1]-yg_shift,qg,cnt_of_foot,false);
-      cnt_of_foot++;
-  }
-  else if( (cnt_of_foot%2) == 0)
-  {
-      //foot_draw(path_x.at(x_end)-xg_shift,path_y.at(y_end)-yg_shift,qg,cnt_of_foot,false);
-      foot_draw(goal_xy[0]-xg_shift,goal_xy[1]-yg_shift,qg,cnt_of_foot,false);
-      cnt_of_foot++;
-      //foot_draw(path_x.at(x_end)+xg_shift,path_y.at(y_end)+yg_shift,qg,cnt_of_foot,true);
-      foot_draw(goal_xy[0]+xg_shift,goal_xy[1]+yg_shift,qg,cnt_of_foot,true);
-      cnt_of_foot++;
-  }*/
-
-
   foot_box_pub.publish(foot_markers);
   foot_step_plan_pub.publish(foot_step_lists);
   }
@@ -560,31 +454,6 @@ void footstep_planner::curvature_cal(int start_node, int end_node)
     curvature2D = sqrt( std::abs(pow( f2ndDerivative[1]*f1stDerivative[0] - f2ndDerivative[0]*f1stDerivative[1], 2.0f ) / pow( f2ndDerivative[0] + f2ndDerivative[1], 3.0 ) ) );
   }
   vecCurvature.push_back(curvature2D);
-/*  for(size_t i=0; i<CurvaturePointSize;i++)
-  {
-
-    pos[0] = path_x.at(i);
-    pos[1] = path_y.at(i);
-     cout << pos << endl;
-    if(i==0) {posOld = posOlder = pos;}
-    f1stDerivative[0] =   pos[0]      - posOld[0];
-    f1stDerivative[1] =   pos[1]      - posOld[1];
-    f2ndDerivative[0] = - pos[0] + 2.0f * posOld[0] - posOlder[0];
-    f2ndDerivative[1] = - pos[1] + 2.0f * posOld[1] - posOlder[1];
-
-
-
-    double curvature2D = 0.0f;
-    if(std::abs(f2ndDerivative[0]) > 10e-4 && std::abs(f2ndDerivative[1]) > 10e-4)
-    {
-      curvature2D = sqrt( std::abs(pow( f2ndDerivative[1]*f1stDerivative[0] - f2ndDerivative[0]*f1stDerivative[1], 2.0f ) / pow( f2ndDerivative[0] + f2ndDerivative[1], 3.0 ) ) );
-    }
-
-    vecCurvature.push_back(curvature2D);
-    posOlder = posOld;
-    posOld = pos;
-  }
-*/
   node_curvatures.clear();
   for(size_t i=0; i<vecCurvature.size();i++)
   {

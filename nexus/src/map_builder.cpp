@@ -20,7 +20,7 @@ map_builder::map_builder()
   processed_clouds->clear();
   grid_points->clear();
   map_builder_cmd_sub = m_nh.subscribe<planner_msgs::Mapbuilder>("map_builder_cmd",100,&map_builder::map_builder_cmd,this);
-  online_cloud_sub = m_nh.subscribe<sensor_msgs::PointCloud2>("sync_scan_cloud_filtered",100,&map_builder::load_from_online,this);
+  online_cloud_sub = m_nh.subscribe<sensor_msgs::PointCloud2>("/sync_scan_cloud_filtered",100,&map_builder::load_from_online,this);
   processed_cloud_sub = m_nh.subscribe<sensor_msgs::PointCloud2>("noise_preprocessed_point_cloud",100,&map_builder::processed_cloud_cb,this);
   raw_cloud_pub = m_nh.advertise<sensor_msgs::PointCloud2>("raw_point_cloud",100);
   hcut_cloud_pub = m_nh.advertise<sensor_msgs::PointCloud2>("height_cut_point_cloud",100);
@@ -32,6 +32,7 @@ map_builder::map_builder()
 
 void map_builder::processed_cloud_cb(const sensor_msgs::PointCloud2::ConstPtr &input)
 {
+
   processed_clouds->clear();
   pcl::fromROSMsg(*input,*processed_clouds);
 }
@@ -92,6 +93,11 @@ void map_builder::load_from_online(const sensor_msgs::PointCloud2::ConstPtr &inp
         clouds->clear();
         pcl::fromROSMsg(*input,*clouds);
         isOnline_recv = false;
+        ROS_INFO("Point Cloud received");
+        sensor_msgs::PointCloud2::Ptr output_cloud(new sensor_msgs::PointCloud2);
+        pcl::toROSMsg (*clouds, *output_cloud);
+        output_cloud->header.frame_id = "base_link";
+        raw_cloud_pub.publish(output_cloud);
     }
 }
 
