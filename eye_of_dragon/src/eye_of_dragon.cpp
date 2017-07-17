@@ -24,10 +24,11 @@ class EyeOfDragon
 public:
     EyeOfDragon()
     {
+        shoot_once = false;
         run_assembly = false;
         assembly_pt_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/assemble_cloud",10);
         reset_pt_ = nh_.subscribe<planner_msgs::Mapbuilder>("/reset_pt",10,&EyeOfDragon::visual_sensor_cmd,this);
-        pt_sub_ = nh_.subscribe<sensor_msgs::PointCloud2>("/sync_scan_cloud_filtered",10,&EyeOfDragon::robot_point_cloud_cb,this);
+        pt_sub_ = nh_.subscribe<sensor_msgs::PointCloud2>("/self_filtered_cloud",10,&EyeOfDragon::robot_point_cloud_cb,this);
     }
     void visual_sensor_cmd(const planner_msgs::Mapbuilder::ConstPtr &cmd)
     {
@@ -39,6 +40,7 @@ public:
         else if(cmd->state == "disable_assemble") // stop receving data
         {
             run_assembly = false;
+            shoot_once = true;
         }
         else if(cmd->state == "run_assemble") // restart receving data
         {
@@ -62,10 +64,18 @@ public:
                 send_clouds->push_back(filtered_clouds->at(i));
             }
 
+            sensor_msgs::PointCloud2::Ptr output_cloud(new sensor_msgs::PointCloud2);            
+            pcl::toROSMsg (*send_clouds, *output_cloud);
+            output_cloud->header.frame_id = "base_link";
+            assembly_pt_pub_.publish(output_cloud);
+        }
+        if(shoot_once == true)
+        {
             sensor_msgs::PointCloud2::Ptr output_cloud(new sensor_msgs::PointCloud2);
             pcl::toROSMsg (*send_clouds, *output_cloud);
             output_cloud->header.frame_id = "base_link";
             assembly_pt_pub_.publish(output_cloud);
+            shoot_once = false;
         }
     }
 
@@ -75,12 +85,13 @@ private:
     ros::Subscriber reset_pt_;
     ros::Subscriber pt_sub_;
     bool            run_assembly;
+    bool            shoot_once;
 };
 
 
 int main(int argc, char **argv)
 {
    ros::init(argc,argv,"eye_of_dragon");
-   EyeOfDragon hanzo;
+   EyeOfDragon hanzo;   
    ros::spin();
 }
