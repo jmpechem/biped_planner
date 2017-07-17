@@ -1,6 +1,7 @@
 <launch>
   <node name="nexus" pkg="nexus" type="nexus" output="screen" />
   <node name="noise_preprocessing" pkg="noise_preprocessing" type="noise_preprocessing" output="screen" />
+  <node name="plane_seg" pkg="plane_seg" type="plane_seg" output="screen" />
   <!--node name="traversability" pkg="jm_map" type="traversability" /-->
   <node pkg="grid_map_visualization" type="grid_map_visualization" name="grid_map_visualization" output="screen">
     <rosparam command="load" file="$(find nexus)/config/nexus.yaml" />
