@@ -136,7 +136,7 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(eye_of_dragon src/eye_of_dragon.cpp)
-add_executable(high_noon src/high_noon.cpp)
+
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -151,9 +151,7 @@ add_executable(high_noon src/high_noon.cpp)
  target_link_libraries(eye_of_dragon
    ${catkin_LIBRARIES}
  )
- target_link_libraries(high_noon
-   ${catkin_LIBRARIES}
- )
+
 #############
 ## Install ##
 #############

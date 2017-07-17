@@ -4,15 +4,11 @@
   <param name="robot_description"
     textfile="$(find jet_description)/robots/fullbody.sldasm.urdf" />
 
-  <node name="joint_state_publisher" pkg="joint_state_publisher"
-    type="joint_state_publisher">
-    <param name="use_gui" value="FALSE" />
-  </node>
+  <!--node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher"-->
+    <!--param name="/use_gui" value="true" /-->
+  <!--/node-->
 
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
-  <!--node
-    name="rviz"
-    pkg="rviz"
-    type="rviz"
-    args="-d $(find jet_description)/urdf.rviz" /-->
+  <node name="high_noon" pkg="high_noon" type="high_noon" />
+  <!--node name="rviz" pkg="rviz" type="rviz" args="-d $(find jet_description)/urdf.rviz" /-->
 </launch>
