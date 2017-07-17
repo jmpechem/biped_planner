@@ -4,7 +4,7 @@
   <param name="robot_description"
     textfile="$(find jet_description)/robots/fullbody.sldasm.urdf" />
 
-  <!--node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher"-->
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher"/>
     <!--param name="/use_gui" value="true" /-->
   <!--/node-->
 

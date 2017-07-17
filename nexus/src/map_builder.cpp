@@ -81,7 +81,7 @@ void map_builder::load_from_pcd(std::string filename)
     ROS_INFO("PCD read success!");
     sensor_msgs::PointCloud2::Ptr output_cloud(new sensor_msgs::PointCloud2);
     pcl::toROSMsg (*clouds, *output_cloud);
-    output_cloud->header.frame_id = "base_link";
+    output_cloud->header.frame_id = "lidar_base_link";
     raw_cloud_pub.publish(output_cloud);
   }
 }
@@ -96,7 +96,7 @@ void map_builder::load_from_online(const sensor_msgs::PointCloud2::ConstPtr &inp
         ROS_INFO("Point Cloud received");
         sensor_msgs::PointCloud2::Ptr output_cloud(new sensor_msgs::PointCloud2);
         pcl::toROSMsg (*clouds, *output_cloud);
-        output_cloud->header.frame_id = "base_link";
+        output_cloud->header.frame_id = "lidar_base_link";
         raw_cloud_pub.publish(output_cloud);
     }
 }
@@ -135,7 +135,7 @@ void map_builder::height_cut(float robot_height)
       pcl::toPCLPointCloud2(final_assembly, cloud_p);
       sensor_msgs::PointCloud2 output;
       pcl_conversions::fromPCL(cloud_p, output);
-      output.header.frame_id = "base_link";
+      output.header.frame_id = "lidar_base_link";
       hcut_cloud_pub.publish(output);
 
       //hcut_clouds->points[i].x
@@ -156,7 +156,7 @@ void map_builder::grid_map_converting(float grid_resolution)
       float xysize = grid_resolution * 100;
       ROS_INFO("Gridmap : %f %f",xysize,xysize/2);
       grid_map_.setGeometry(Length(xysize,xysize),grid_resolution,Position(xysize/2,0));
-      grid_map_.setFrameId("base_link");
+      grid_map_.setFrameId("lidar_base_link");
 
 
 
@@ -242,7 +242,7 @@ void map_builder::grid_map_converting(float grid_resolution)
         sensor_msgs::PointCloud2 output;
         pcl::toPCLPointCloud2(seg_cloud, cloud_p);        
         pcl_conversions::fromPCL(cloud_p, output);
-        output.header.frame_id = "base_link";
+        output.header.frame_id = "lidar_base_link";
         grid_map_plane_seg_pub.publish(output);
 
         /*pcl::toPCLPointCloud2(seg_normal_cloud, cloud_p);

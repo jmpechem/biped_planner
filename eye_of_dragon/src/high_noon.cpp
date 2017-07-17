@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
+#include <tf/transform_broadcaster.h>
 #include "planner_msgs/Mapbuilder.h"
 #include "thormang_ctrl_msgs/JointState.h"
 
@@ -33,12 +34,18 @@ int main(int argc, char **argv)
    rviz_joint_pub = nh.advertise<sensor_msgs::JointState>("joint_states",1);
    ros::Subscriber real_joint_sub = nh.subscribe<thormang_ctrl_msgs::JointState>("joint_state",1,real_joint_cb);
 
+   tf::TransformBroadcaster br;
+   tf::Transform transform;
 
+//   sensor_msgs::JointState view_model;
    ros::Rate r(30);
-   float angle = -1.575f;
+//   float angle = -1.575f;
    while(ros::ok())
    {
-      /*
+      transform.setOrigin( tf::Vector3(0.0, 0.0, 2.0) );
+      transform.setRotation( tf::Quaternion(0, 0, 0, 1) );
+      br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "lidar_base_link"));
+/*
       view_model.header.stamp = ros::Time::now();
       view_model.name.resize(28);
       view_model.position.resize(28);
@@ -78,11 +85,11 @@ int main(int argc, char **argv)
       for(int i=0;i<28;i++)
       {
 
-        view_model.position[i] = 0.0f;
+        view_model.position[i] = angle;
       }
 
       rviz_joint_pub.publish(view_model);
-      */
+*/
 
       ros::spinOnce();
       r.sleep();
