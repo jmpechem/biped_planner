@@ -1,0 +1,40 @@
+min_sensor_dist: .01
+self_see_default_padding: .08
+self_see_default_scale: 1.0
+self_see_links:
+- name: base_link
+- name: WaistYaw_Link
+- name: WaistPitch_Link
+- name: R_WristYaw_Link
+- name: R_WristRoll_Link
+- name: R_ShoulderYaw_Link
+- name: R_ShoulderRoll_Link
+- name: R_ShoulderPitch_Link
+- name: R_KneePitch_Link
+- name: R_HipYaw_Link
+- name: R_HipRoll_Link
+- name: R_HipPitch_Link
+- name: R_HandYaw_Link
+- name: R_ElbowRoll_Link
+- name: R_AnckleRoll_Link
+- name: R_AncklePitch_Link
+- name: L_WristYaw_Link
+- name: L_WristRoll_Link
+- name: L_ShoulderYaw_Link
+- name: L_ShoulderRoll_Link
+- name: L_ShoulderPitch_Link
+- name: L_KneePitch_Link
+- name: L_HipYaw_Link
+- name: L_HipRoll_Link
+- name: L_HipPitch_Link
+- name: L_HandYaw_Link
+- name: L_ElbowRoll_Link
+- name: L_AnckleRoll_Link
+- name: L_AnklePitch_Link
+
+
+#- name: waist
+#- name: waist_lidar_mount_link
+#- name: waist_hokuyo_laser_frame
+#- name: l_hand
+#- name: r_hand
