@@ -36,6 +36,5 @@ target_link_libraries(nexus
    ${catkin_LIBRARIES}
    ${PCL_LIBRARIES}
    ${OpenCV_LIBRARIES}
-   opencv_nonfree
  )
 

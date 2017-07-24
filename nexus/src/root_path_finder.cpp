@@ -100,14 +100,14 @@ void root_path_finder::root_path_plan()
           root_grid_map_data.getIndex(pos,idx);
           if(root_grid_map_data.isValid(*iter,"sub_elevation"))
           {
-              if(root_grid_map_data.at("obstacle_with_pf",*iter) > 0)
+              if(root_grid_map_data.at("obstacle_with_pf",*iter) >= 1 )
               { dstar->updateCell(idx(0),idx(1),-1);}
-              else
-              {dstar->updateCell(idx(0),idx(1),1);}
+              else if(root_grid_map_data.at("obstacle_with_pf",*iter) < 1 && root_grid_map_data.at("obstacle_with_pf",*iter) > 0)
+              {dstar->updateCell(idx(0),idx(1),10);}
           }
           else
           {
-              dstar->updateCell(idx(0),idx(1),2);
+              dstar->updateCell(idx(0),idx(1),5);
           }
       }
       if(convert_pose2grid() == true)

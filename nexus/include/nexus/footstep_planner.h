@@ -14,6 +14,7 @@ class footstep_planner{
 
   double root_path_slope_cal(int start_node, int end_node);
   void foot_draw(double x,double y, tf::Quaternion q_input ,int num,bool isleft);
+  void foot_remove(int befor_num);
   void save_offline_footstep();
   int find_one_step_max_node(int start_node,double max_length);
   void init_foot_pose(float init_x,float init_y,double d,tf::Quaternion q_init);

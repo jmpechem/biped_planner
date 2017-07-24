@@ -184,7 +184,51 @@ void footstep_planner::init_foot_pose(float init_x,float init_y,double d,tf::Qua
   cout << "angle diff: "<< rad2deg(yaw) << endl;
   tf::Quaternion q_rot_i;
 
-  /*for(int i=0;i<10;i++)
+  double xi_shift = -sin(yi)*d;
+  double yi_shift = cos(yi)*d;
+  foot_draw(path_x.at(0)-xi_shift,path_y.at(0)-yi_shift,q_init,cnt_of_foot,false);
+  cnt_of_foot++;
+  foot_draw(path_x.at(0)+xi_shift,path_y.at(0)+yi_shift,q_init,cnt_of_foot,true);
+  cnt_of_foot++;
+
+ int target = find_one_step_max_node(0,0.15);
+ double init_angle  = root_path_slope_cal(0,target) + 1.57079632679;
+
+
+
+ double init_angle_diff = init_angle - yi;
+ cout << endl;
+cout << "init angle diff :" << rad2deg(init_angle_diff) << endl;
+ double init_yaw = init_angle;
+ if( abs(init_angle_diff) >= alpha_limit)
+ {
+      int iter_num = (int)(abs( rad2deg(init_angle_diff))/rad2deg(alpha_delta));
+       cout << endl;
+       cout << "iter num :" << iter_num << endl;
+       double target_init_yaw = 0.0f;
+      for(int i=0;i<iter_num;i++)
+      {
+         if(init_angle_diff > 0)
+         {
+               target_init_yaw = target_init_yaw + alpha_delta;
+         }
+         else
+         {
+               target_init_yaw = target_init_yaw - alpha_delta;
+         }
+         double xi_shift = -sin(target_init_yaw)*d;
+         double yi_shift = cos(target_init_yaw)*d;
+         tf::Quaternion q_init = tf::createQuaternionFromYaw(target_init_yaw);
+
+             foot_draw(path_x.at(0)-xi_shift,path_y.at(0)-yi_shift,q_init,cnt_of_foot,false);
+             cnt_of_foot++;
+             foot_draw(path_x.at(0)+xi_shift,path_y.at(0)+yi_shift,q_init,cnt_of_foot,true);
+             cnt_of_foot++;
+      }
+ }
+
+/*
+  for(int i=0;i<10;i++)
   {
       if(abs(rad2deg(yaw)) >= alpha_limit)
       {
@@ -209,13 +253,7 @@ void footstep_planner::init_foot_pose(float init_x,float init_y,double d,tf::Qua
 
           }
       }
-  }*/
-  double xi_shift = -sin(yi)*d;
-  double yi_shift = cos(yi)*d;
-  foot_draw(path_x.at(0)-xi_shift,path_y.at(0)-yi_shift,q_init,cnt_of_foot,false);
-  cnt_of_foot++;
-  foot_draw(path_x.at(0)+xi_shift,path_y.at(0)+yi_shift,q_init,cnt_of_foot,true);
-  cnt_of_foot++;
+  }  */
 }
 
 void footstep_planner::final_foot_pose(float goal_x,float goal_y,double final_yaw,bool final_left_start,double d,tf::Quaternion q_final)
@@ -340,12 +378,34 @@ int footstep_planner::find_one_step_max_node(int start_node,double max_length)
 
   return start_node+5;
 }
+void footstep_planner::foot_remove(int befor_num)
+{
+  foot_markers.markers.clear();
+  for(int i=0;i<befor_num;i++)
+  {
+      visualization_msgs::Marker marker;
+      marker.header.frame_id = "base_link";
+      marker.header.stamp = ros::Time::now();
+      marker.ns = "footstep_list";
+      marker.id = i;
+      marker.action = visualization_msgs::Marker::DELETE;
+      marker.lifetime = ros::Duration();
+      foot_markers.markers.push_back(marker);
+  }
+  foot_box_pub.publish(foot_markers);
+}
 
 void footstep_planner::creat_footstep(double foot_distance, double onestep)
 {
+
   plan_foot_lists.clear();
   foot_step_lists.foot_steps.clear();
+  if(cnt_of_foot>0)
+  {
+      foot_remove(cnt_of_foot);
+  }
   foot_markers.markers.clear();
+
   cnt_of_foot = 0;
   if(path_x.size() == 0 || path_y.size() == 0){ }
   else
@@ -376,7 +436,7 @@ void footstep_planner::creat_footstep(double foot_distance, double onestep)
   double yaw_cur, yaw_new, yaw_diff;
   double yaw_cal_final;
   bool isfinal_left = false;
-  for(size_t i=0; i<100;i++)
+  for(size_t i=0; i<cnt_of_foot+100;i++)
   {
     cur_max_index = find_one_step_max_node(start_node_index,step_max_length);
     curvature_cal(start_node_index,cur_max_index);

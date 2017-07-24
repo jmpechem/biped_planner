@@ -20,7 +20,7 @@ map_builder::map_builder()
   processed_clouds->clear();
   grid_points->clear();
   map_builder_cmd_sub = m_nh.subscribe<planner_msgs::Mapbuilder>("map_builder_cmd",100,&map_builder::map_builder_cmd,this);
-  online_cloud_sub = m_nh.subscribe<sensor_msgs::PointCloud2>("/assemble_cloud",100,&map_builder::load_from_online,this);
+  online_cloud_sub = m_nh.subscribe<sensor_msgs::PointCloud2>("/self_filtered_assemble_cloud",100,&map_builder::load_from_online,this);
   processed_cloud_sub = m_nh.subscribe<sensor_msgs::PointCloud2>("noise_preprocessed_point_cloud",100,&map_builder::processed_cloud_cb,this);
   raw_cloud_pub = m_nh.advertise<sensor_msgs::PointCloud2>("raw_point_cloud",100);
   hcut_cloud_pub = m_nh.advertise<sensor_msgs::PointCloud2>("height_cut_point_cloud",100);
@@ -47,12 +47,7 @@ void map_builder::map_builder_cmd(const planner_msgs::Mapbuilder::ConstPtr &cmd)
     clouds->clear();
     load_from_pcd(cmd->state);
 
-  }
-  else if(cmd->state == "load_onlinedata")
-  {
-    ROS_INFO("%s",cmd->state.c_str());
-    isOnline_recv = true;
-  }
+  } 
   else if(cmd->state == "height_cut")
   {
       ROS_INFO("%s",cmd->state.c_str());
@@ -87,18 +82,15 @@ void map_builder::load_from_pcd(std::string filename)
 }
 
 void map_builder::load_from_online(const sensor_msgs::PointCloud2::ConstPtr &input)
-{
-    if(isOnline_recv)
-    {
+{    
         clouds->clear();
         pcl::fromROSMsg(*input,*clouds);
-        isOnline_recv = false;
+
         ROS_INFO("Point Cloud received");
         sensor_msgs::PointCloud2::Ptr output_cloud(new sensor_msgs::PointCloud2);
         pcl::toROSMsg (*clouds, *output_cloud);
         output_cloud->header.frame_id = "lidar_base_link";
-        raw_cloud_pub.publish(output_cloud);
-    }
+        raw_cloud_pub.publish(output_cloud);    
 }
 
 void map_builder::height_cut(float robot_height)
