@@ -1,0 +1,22 @@
+cmake_minimum_required(VERSION 2.8.3)
+project(zed_parser)
+
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  sensor_msgs
+  std_msgs
+  cv_bridge
+  image_transport
+)
+catkin_package(
+  INCLUDE_DIRS include
+)
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
+add_executable(zed_parser src/zed_parser.cpp)
+target_link_libraries(zed_parser
+  ${catkin_LIBRARIES}
+)
+

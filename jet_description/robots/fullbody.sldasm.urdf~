@@ -1,12 +1,21 @@
-<robot name="fullbody.sldasm">
-  <link name="world"/>
-  <joint name="virtual" type="floating">
-    <origin xyz="0 0 0" rpy="0 0 0" />
-    <parent link="world"/>
-    <child link="base_link"/>
-    <limit effort="30" velocity="1.0" lower="-2.2" upper="0.7" />
-  </joint>
+<!--
+  Copyright 2017 Dyros LAB JiminLee
 
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<robot name="fullbody.sldasm">
+  <link name="map"/>
   <link name="base_link">
     <inertial>
       <origin xyz="-0.00106 0 0.049486" rpy="0 0 0" />
@@ -41,6 +50,14 @@
       </geometry>	
     </collision>
   </link>
+  <joint name="virtual" type="floating">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="map"/>
+    <child link="base_link"/>
+    <axis xyz="0 0 1" />
+    <calibration rising="0.0"/>
+    <limit effort="30" velocity="1.0" lower="-2.2" upper="0.7" />
+  </joint>
   <link name="L_HipYaw_Link">
     <inertial>
       <origin
@@ -1607,4 +1624,60 @@
       effort="30"
       velocity="1" lower="-3.14" upper="3.14" />
   </joint>
+  <link name="zed_left_camera">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 1.57 0"/>
+            <geometry>
+                <cylinder radius="0.007" length=".031"/>
+            </geometry>
+            <material name="dark_grey">
+                <color rgba="0.1 0.1 0.1 1"/>
+            </material>
+        </visual>
+    </link>
+    <link name="zed_center">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="package://jet_description/meshes/ZED.stl" />
+            </geometry>
+            <material name="light_grey">
+                <color rgba="0.8 0.8 0.8 0.8"/>
+            </material>
+        </visual>
+    </link>
+    <link name="zed_right_camera">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 1.57 0"/>
+            <geometry>
+                <cylinder radius="0.007" length=".031"/>
+            </geometry>
+            <material name="dark_grey">
+                <color rgba="0.1 0.1 0.1 1"/>
+            </material>
+        </visual>
+    </link>
+    <link name="zed_depth_camera" />
+
+    <joint name="zed_center_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="zed_center"/>
+        <origin xyz="0.14739 0.0 0.66991" rpy="0 0 0" />
+    </joint>
+    <joint name="zed_left_camera_joint" type="fixed">
+        <parent link="zed_center"/>
+        <child link="zed_left_camera"/>
+        <origin xyz="0 0.06 0" rpy="0 0 0" />
+    </joint>
+    <joint name="zed_depth_camera_joint" type="fixed">
+        <parent link="zed_left_camera"/>
+        <child link="zed_depth_camera"/>
+        <origin xyz="0 0 0" rpy="-1.5707963267948966 0 -1.5707963267948966" />
+    </joint>
+
+    <joint name="zed_right_camera_joint" type="fixed">
+        <parent link="zed_center"/>
+        <child link="zed_right_camera"/>
+        <origin xyz="0 -0.06 0" rpy="0 0 0" />
+    </joint>
 </robot>
